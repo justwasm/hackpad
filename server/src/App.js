@@ -20,7 +20,7 @@ function App() {
       newTerminal,
       newEditor,
     }
-    Promise.all([ install('editor'), install('sh') ])
+    Promise.all([ install('wasm/editor.wasm'), install('wasm/sh.wasm') ])
       .then(() => {
         run('editor', '--editor=editor')
         setLoading(false)
