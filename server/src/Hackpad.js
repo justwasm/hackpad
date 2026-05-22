@@ -12,7 +12,7 @@ async function init() {
   const cmd = await WebAssembly.instantiateStreaming(fetch(`wasm/main.wasm`), go.importObject)
   go.env = {
     'GOMODCACHE': '/home/me/.cache/go-mod',
-    'GOPROXY': 'https://proxy.golang.org/',
+    'GOPROXY': 'https://goproxy.up.railway.app/',
     'GOROOT': '/usr/local/go',
     'HOME': '/home/me',
     'PATH': '/bin:/home/me/go/bin:/usr/local/go/bin/js_wasm:/usr/local/go/pkg/tool/js_wasm',
