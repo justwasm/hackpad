@@ -1,6 +1,7 @@
 SHELL := /usr/bin/env bash
-GO_VERSION = 1.26
+GO_VERSION = 1.27
 GOROOT =
+TAG = go1.27.0-go4js.1
 PATH := ${PWD}/cache/go/bin:${PWD}/cache/go/misc/wasm:${PATH}
 GOOS = js
 GOARCH = wasm
@@ -41,15 +42,24 @@ test-js: go
 .PHONY: test
 test: test-native #test-js  # TODO restore when this is resolved: https://travis-ci.community/t/goos-js-goarch-wasm-go-run-fails-panic-newosproc-not-implemented/1651
 
+.PHONY: tidy
+tidy:
+	go mod tidy
+
 .PHONY: go-static
-go-static: server/public/wasm/go.tar.gz commands
+go-static: tidy server/public/wasm/go.tar.gz commands
 
 server/public/wasm:
 	mkdir -p server/public/wasm
 
-server/public/wasm/go.tar.gz: server/public/wasm go
-	GOARCH=$$(go env GOHOSTARCH) GOOS=$$(go env GOHOSTOS) \
-		go run ./internal/cmd/gozip cache/go > server/public/wasm/go.tar.gz
+server/public/wasm/go.tar.gz: server/public/wasm
+	set -ex; \
+	[[ -f server/public/wasm/go.tar.gz ]] && exit 0; \
+	TMP=$$(mktemp -d); \
+	trap 'rm -rf "$$TMP"' EXIT; \
+	curl -sL "https://github.com/justwasm/go/releases/download/${TAG}/${TAG}.js-wasm.min.tar.gz" | tar -xzC "$$TMP"; \
+	mv "$$TMP/go" server/public/wasm/go; \
+	cd server/public/wasm && tar -czf go.tar.gz go && rm -rf go
 
 .PHONY: clean
 clean:
@@ -67,24 +77,13 @@ go: cache/go${GO_VERSION}
 cache/go${GO_VERSION}: cache
 	if [[ ! -e cache/go${GO_VERSION} ]]; then \
 		set -ex; \
-		TMP=$$(mktemp -d); trap 'rm -rf "$$TMP"' EXIT; \
-		git clone \
-			--depth 1 \
-			--single-branch \
-			--branch hackpad/master \
-			https://github.com/btwiuse/go \
-			"$$TMP"; \
-		pushd "$$TMP/src"; \
-		./make.bash; \
-		export PATH="$$TMP/bin:$$PATH"; \
-		go version; \
-		mkdir -p ../bin/js_wasm; \
-		go build -o ../bin/js_wasm/ std cmd/go cmd/gofmt; \
-		go tool dist test -rebuild -list; \
-		go build -o ../pkg/tool/js_wasm/ std cmd/buildid cmd/pack cmd/cover cmd/vet; \
-		go install ./...; \
-		popd; \
-		mv "$$TMP" cache/go${GO_VERSION}; \
+		host=$$(go env GOHOSTOS); \
+		arch=$$(go env GOHOSTARCH); \
+		TMP=$$(mktemp -d); \
+		trap 'rm -rf "$$TMP"' EXIT; \
+		curl -sL "https://github.com/justwasm/go/releases/download/${TAG}/${TAG}.$${host}-$${arch}.min.tar.gz" | tar -xzC "$$TMP"; \
+		mv "$$TMP/go" cache/go${GO_VERSION}; \
+		rm -rf cache/go; \
 		ln -sfn go${GO_VERSION} cache/go; \
 	fi
 	touch cache/go${GO_VERSION}
