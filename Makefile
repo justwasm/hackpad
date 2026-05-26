@@ -72,7 +72,7 @@ cache/go${GO_VERSION}: cache
 			--depth 1 \
 			--single-branch \
 			--branch hackpad/master \
-			https://github.com/btwiuse/go \
+			https://github.com/justwasm/go \
 			"$$TMP"; \
 		pushd "$$TMP/src"; \
 		./make.bash; \
