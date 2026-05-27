@@ -214,7 +214,7 @@ func (f *FileDescriptors) MkdirAll(path string, mode os.FileMode) error {
 
 func (f *FileDescriptors) Unlink(path string) error {
 	path = f.resolvePath(path)
-	info, err := hackpadfs.Stat(filesystem, path)
+	info, err := hackpadfs.LstatOrStat(filesystem, path)
 	if err != nil {
 		return err
 	}
@@ -318,6 +318,21 @@ func (f *FileDescriptors) Flock(fd FID, action LockAction, shouldLock bool) erro
 		return interop.ErrNotImplemented
 	}
 	return nil
+}
+
+func (f *FileDescriptors) Symlink(oldname, newname string) error {
+	// oldname is the symlink target stored verbatim (POSIX semantics: targets
+	// are not resolved at creation time; relative targets are interpreted
+	// relative to the symlink's directory at access time).
+	newname = f.resolvePath(newname)
+	mountFS, subPath := filesystem.Mount(newname)
+	return hackpadfs.Symlink(mountFS, oldname, subPath)
+}
+
+func (f *FileDescriptors) Readlink(name string) (string, error) {
+	name = f.resolvePath(name)
+	mountFS, subPath := filesystem.Mount(name)
+	return hackpadfs.Readlink(mountFS, subPath)
 }
 
 func (f *FileDescriptors) RawFID(fid FID) (io.Reader, error) {

@@ -20,8 +20,6 @@ import (
 fchown(fd, uid, gid, callback) { callback(enosys()); },
 lchown(path, uid, gid, callback) { callback(enosys()); },
 link(path, link, callback) { callback(enosys()); },
-readlink(path, callback) { callback(enosys()); },
-symlink(path, link, callback) { callback(enosys()); },
 truncate(path, length, callback) { callback(enosys()); },
 */
 
@@ -64,12 +62,16 @@ func Init() {
 	interop.SetFunc(fs, "readSync", readSync)
 	interop.SetFunc(fs, "readdir", readdir)
 	interop.SetFunc(fs, "readdirSync", readdirSync)
+	interop.SetFunc(fs, "readlink", readlink)
+	interop.SetFunc(fs, "readlinkSync", readlinkSync)
 	interop.SetFunc(fs, "rename", rename)
 	interop.SetFunc(fs, "renameSync", renameSync)
 	interop.SetFunc(fs, "rmdir", rmdir)
 	interop.SetFunc(fs, "rmdirSync", rmdirSync)
 	interop.SetFunc(fs, "stat", stat)
 	interop.SetFunc(fs, "statSync", statSync)
+	interop.SetFunc(fs, "symlink", symlink)
+	interop.SetFunc(fs, "symlinkSync", symlinkSync)
 	interop.SetFunc(fs, "unlink", unlink)
 	interop.SetFunc(fs, "unlinkSync", unlinkSync)
 	interop.SetFunc(fs, "utimes", utimes)
