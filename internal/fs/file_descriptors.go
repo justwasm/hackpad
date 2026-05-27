@@ -358,6 +358,13 @@ func (f *FileDescriptors) Symlink(oldname, newname string) error {
 	if err != nil {
 		return err
 	}
+	// Return EEXIST if a symlink or file already exists at the target path
+	if _, ok := lookupSymlink(resolved); ok {
+		return &hackpadfs.PathError{Op: "symlink", Path: newname, Err: hackpadfs.ErrExist}
+	}
+	if _, err := hackpadfs.Stat(filesystem, resolved); err == nil {
+		return &hackpadfs.PathError{Op: "symlink", Path: newname, Err: hackpadfs.ErrExist}
+	}
 	storeSymlink(resolved, oldname)
 	return nil
 }

@@ -13,6 +13,9 @@ import (
 
 const maxSymlinkDepth = 40
 
+// symlinkMap is a global store shared across all FileDescriptors instances.
+// Symlinks are filesystem-level entities visible to all processes, so the
+// store must be global (not per-process) to allow cross-process visibility.
 var (
 	symlinksMu sync.RWMutex
 	symlinkMap = make(map[string]string)
