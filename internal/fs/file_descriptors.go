@@ -332,10 +332,7 @@ func (f *FileDescriptors) Symlink(oldname, newname string) error {
 func (f *FileDescriptors) Readlink(name string) (string, error) {
 	name = f.resolvePath(name)
 	mountFS, subPath := filesystem.Mount(name)
-	if rlFS, ok := mountFS.(hackpad.ReadlinkFS); ok {
-		return rlFS.Readlink(subPath)
-	}
-	return "", &hackpadfs.PathError{Op: "readlink", Path: name, Err: hackpadfs.ErrNotImplemented}
+	return hackpadfs.Readlink(mountFS, subPath)
 }
 
 func (f *FileDescriptors) RawFID(fid FID) (io.Reader, error) {
