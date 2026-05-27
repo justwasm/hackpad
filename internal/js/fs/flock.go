@@ -24,7 +24,8 @@ func flockSync(args []js.Value) (interface{}, error) {
 	fid := common.FID(args[0].Int())
 	flag := args[1].Int()
 	var action fs.LockAction
-	shouldLock := true
+	shouldLock := flag&syscall.LOCK_NB == 0
+	flag &^= syscall.LOCK_NB
 	switch flag {
 	case syscall.LOCK_EX:
 		action = fs.LockExclusive
@@ -39,5 +40,5 @@ func flockSync(args []js.Value) (interface{}, error) {
 
 func Flock(fid common.FID, action fs.LockAction, shouldLock bool) error {
 	p := process.Current()
-	return p.Files().Flock(fid, action)
+	return p.Files().Flock(fid, action, shouldLock)
 }

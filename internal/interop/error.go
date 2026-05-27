@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrNotImplemented = NewError("operation not supported", "ENOSYS")
+	ErrWouldBlock     = NewError("resource temporarily unavailable", "EWOULDBLOCK")
 )
 
 type Error interface {
