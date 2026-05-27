@@ -108,6 +108,11 @@ func (f *FileDescriptors) newFID() FID {
 
 func (f *FileDescriptors) Open(path string, flags int, mode os.FileMode) (fd FID, err error) {
 	path = f.resolvePath(path)
+	resolved, err := resolveSymlinks(path)
+	if err != nil {
+		return 0, err
+	}
+	path = resolved
 
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -197,11 +202,24 @@ func (f *FileDescriptors) Chmod(path string, mode os.FileMode) error {
 }
 
 func (f *FileDescriptors) Stat(path string) (os.FileInfo, error) {
-	return hackpadfs.Stat(filesystem, f.resolvePath(path))
+	path = f.resolvePath(path)
+	resolved, err := resolveSymlinks(path)
+	if err != nil {
+		return nil, err
+	}
+	return hackpadfs.Stat(filesystem, resolved)
 }
 
 func (f *FileDescriptors) Lstat(path string) (os.FileInfo, error) {
-	return hackpadfs.LstatOrStat(filesystem, f.resolvePath(path))
+	path = f.resolvePath(path)
+	resolved, err := resolveParentSymlinks(path)
+	if err != nil {
+		return nil, err
+	}
+	if target, ok := lookupSymlink(resolved); ok {
+		return newSymlinkFileInfo(resolved, target), nil
+	}
+	return hackpadfs.LstatOrStat(filesystem, resolved)
 }
 
 func (f *FileDescriptors) Mkdir(path string, mode os.FileMode) error {
@@ -214,14 +232,28 @@ func (f *FileDescriptors) MkdirAll(path string, mode os.FileMode) error {
 
 func (f *FileDescriptors) Unlink(path string) error {
 	path = f.resolvePath(path)
-	info, err := hackpadfs.Stat(filesystem, path)
+	resolved, err := resolveParentSymlinks(path)
+	if err != nil {
+		return err
+	}
+	// If it's a symlink in our map, remove it
+	if _, ok := lookupSymlink(resolved); ok {
+		deleteSymlink(resolved)
+		return nil
+	}
+	// Otherwise follow symlinks and remove the target file
+	resolvedFull, err := resolveSymlinks(path)
+	if err != nil {
+		return err
+	}
+	info, err := hackpadfs.Stat(filesystem, resolvedFull)
 	if err != nil {
 		return err
 	}
 	if info.IsDir() {
 		return os.ErrPermission
 	}
-	return hackpadfs.Remove(filesystem, path)
+	return hackpadfs.Remove(filesystem, resolvedFull)
 }
 
 func (f *FileDescriptors) Utimes(path string, atime, mtime time.Time) error {
@@ -318,6 +350,29 @@ func (f *FileDescriptors) Flock(fd FID, action LockAction, shouldLock bool) erro
 		return interop.ErrNotImplemented
 	}
 	return nil
+}
+
+func (f *FileDescriptors) Symlink(oldname, newname string) error {
+	newname = f.resolvePath(newname)
+	resolved, err := resolveParentSymlinks(newname)
+	if err != nil {
+		return err
+	}
+	storeSymlink(resolved, oldname)
+	return nil
+}
+
+func (f *FileDescriptors) Readlink(path string) (string, error) {
+	path = f.resolvePath(path)
+	resolved, err := resolveParentSymlinks(path)
+	if err != nil {
+		return "", err
+	}
+	target, ok := lookupSymlink(resolved)
+	if !ok {
+		return "", &hackpadfs.PathError{Op: "readlink", Path: path, Err: hackpadfs.ErrInvalid}
+	}
+	return target, nil
 }
 
 func (f *FileDescriptors) RawFID(fid FID) (io.Reader, error) {
