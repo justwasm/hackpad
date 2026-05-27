@@ -290,7 +290,7 @@ var (
 	newFileLockMu    sync.Mutex
 )
 
-func (f *FileDescriptors) Flock(fd FID, action LockAction) error {
+func (f *FileDescriptors) Flock(fd FID, action LockAction, shouldLock bool) error {
 	fileDescriptor := f.files[fd]
 	if fileDescriptor == nil {
 		return interop.BadFileNumber(fd)
@@ -307,7 +307,11 @@ func (f *FileDescriptors) Flock(fd FID, action LockAction) error {
 	switch action {
 	case LockShared, LockExclusive:
 		// TODO support shared locks
-		lock.Lock()
+		if shouldLock {
+			lock.Lock()
+		} else if !lock.TryLock() {
+			return interop.ErrWouldBlock
+		}
 	case Unlock:
 		lock.Unlock()
 	default:
