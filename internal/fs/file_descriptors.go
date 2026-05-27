@@ -321,6 +321,9 @@ func (f *FileDescriptors) Flock(fd FID, action LockAction, shouldLock bool) erro
 }
 
 func (f *FileDescriptors) Symlink(oldname, newname string) error {
+	// oldname is the symlink target stored verbatim (POSIX semantics: targets
+	// are not resolved at creation time; relative targets are interpreted
+	// relative to the symlink's directory at access time).
 	newname = f.resolvePath(newname)
 	mountFS, subPath := filesystem.Mount(newname)
 	return hackpadfs.Symlink(mountFS, oldname, subPath)
