@@ -16,13 +16,6 @@ import (
 	"github.com/hack-pad/hackpad/internal/promise"
 )
 
-/*
-fchown(fd, uid, gid, callback) { callback(enosys()); },
-lchown(path, uid, gid, callback) { callback(enosys()); },
-link(path, link, callback) { callback(enosys()); },
-truncate(path, length, callback) { callback(enosys()); },
-*/
-
 func Init() {
 	fs := js.Global().Get("fs")
 	constants := fs.Get("constants")
@@ -42,6 +35,8 @@ func Init() {
 	interop.SetFunc(fs, "closeSync", closeSync)
 	interop.SetFunc(fs, "fchmod", fchmod)
 	interop.SetFunc(fs, "fchmodSync", fchmodSync)
+	interop.SetFunc(fs, "fchown", fchown)
+	interop.SetFunc(fs, "fchownSync", fchownSync)
 	interop.SetFunc(fs, "flock", flock)
 	interop.SetFunc(fs, "flockSync", flockSync)
 	interop.SetFunc(fs, "fstat", fstat)
@@ -52,6 +47,10 @@ func Init() {
 	interop.SetFunc(fs, "ftruncateSync", ftruncateSync)
 	interop.SetFunc(fs, "lstat", lstat)
 	interop.SetFunc(fs, "lstatSync", lstatSync)
+	interop.SetFunc(fs, "link", link)
+	interop.SetFunc(fs, "linkSync", linkSync)
+	interop.SetFunc(fs, "lchown", lchown)
+	interop.SetFunc(fs, "lchownSync", lchownSync)
 	interop.SetFunc(fs, "mkdir", mkdir)
 	interop.SetFunc(fs, "mkdirSync", mkdirSync)
 	interop.SetFunc(fs, "open", open)
@@ -72,6 +71,8 @@ func Init() {
 	interop.SetFunc(fs, "statSync", statSync)
 	interop.SetFunc(fs, "symlink", symlink)
 	interop.SetFunc(fs, "symlinkSync", symlinkSync)
+	interop.SetFunc(fs, "truncate", truncate)
+	interop.SetFunc(fs, "truncateSync", truncateSync)
 	interop.SetFunc(fs, "unlink", unlink)
 	interop.SetFunc(fs, "unlinkSync", unlinkSync)
 	interop.SetFunc(fs, "utimes", utimes)

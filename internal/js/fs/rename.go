@@ -9,8 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// rename(from, to, callback) { callback(enosys()); },
-
 func rename(args []js.Value) ([]interface{}, error) {
 	_, err := renameSync(args)
 	return nil, err
