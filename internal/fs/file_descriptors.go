@@ -277,6 +277,14 @@ func (f *FileDescriptors) Fchmod(fd FID, mode os.FileMode) error {
 	return hackpadfs.Chmod(filesystem, fileDescriptor.FileName(), mode)
 }
 
+func (f *FileDescriptors) Fchown(fd FID, uid, gid int) error {
+	fileDescriptor := f.files[fd]
+	if fileDescriptor == nil {
+		return interop.BadFileNumber(fd)
+	}
+	return hackpadfs.ChownFile(fileDescriptor.file, uid, gid)
+}
+
 type LockAction int
 
 const (

@@ -9,8 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// unlink(path, callback) { callback(enosys()); },
-
 func unlink(args []js.Value) ([]interface{}, error) {
 	_, err := unlinkSync(args)
 	return nil, err
