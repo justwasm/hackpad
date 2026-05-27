@@ -2,6 +2,8 @@ module github.com/hack-pad/hackpad
 
 go 1.26.3
 
+replace github.com/hack-pad/hackpadfs => github.com/justwasm/hackpadfs v0.2.5
+
 require (
 	github.com/LumenResearch/uasurfer v0.0.0-20260126094926-dace53404a8d
 	github.com/btwiuse/hush v0.1.3
