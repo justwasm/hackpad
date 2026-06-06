@@ -233,6 +233,7 @@ func (f *opfsFile) WriteAt(p []byte, off int64) (int, error) {
 	}
 
 	f.fsys.meta.setTimes(f.name, time.Now(), time.Now())
+	f.fsys.cache.invalidate(f.name)
 	return len(p), nil
 }
 
@@ -295,6 +296,7 @@ func (f *opfsFile) Write(p []byte) (int, error) {
 	f.mu.Unlock()
 
 	f.fsys.meta.setTimes(f.name, time.Now(), time.Now())
+	f.fsys.cache.invalidate(f.name)
 	return len(p), nil
 }
 
@@ -385,6 +387,10 @@ func (f *opfsFile) Truncate(size int64) error {
 		"type": "truncate",
 		"size": size,
 	}))
+	if err == nil {
+		f.fsys.meta.setTimes(f.name, time.Now(), time.Now())
+		f.fsys.cache.invalidate(f.name)
+	}
 	return err
 }
 

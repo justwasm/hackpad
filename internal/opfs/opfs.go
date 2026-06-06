@@ -201,7 +201,9 @@ func (f *OPFS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpad
 			if err != nil {
 				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
 			}
-			awaitErr(writable.Call("close"))
+			if _, err := awaitErr(writable.Call("close")); err != nil {
+				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
+			}
 		}
 
 		f.cache.invalidate(name)
@@ -235,7 +237,9 @@ func (f *OPFS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpad
 			if err != nil {
 				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
 			}
-			awaitErr(writable.Call("close"))
+			if _, err := awaitErr(writable.Call("close")); err != nil {
+				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
+			}
 		}
 
 		return &opfsFile{
@@ -441,6 +445,13 @@ func (f *OPFS) Rename(oldname, newname string) error {
 		return &hackpadfs.PathError{Op: "rename", Path: oldname, Err: err}
 	}
 
+	// Check destination doesn't already exist (prevent silent merge)
+	if _, err := f.Stat(newname); err == nil {
+		return &hackpadfs.PathError{Op: "rename", Path: newname, Err: hackpadfs.ErrExist}
+	} else if !errors.Is(err, hackpadfs.ErrNotExist) {
+		return &hackpadfs.PathError{Op: "rename", Path: newname, Err: err}
+	}
+
 	// Create parent directory for destination
 	if err := f.MkdirAll(path.Dir(newname), 0755); err != nil {
 		return &hackpadfs.PathError{Op: "rename", Path: newname, Err: err}
@@ -562,9 +573,11 @@ func (f *OPFS) Clear(ctx context.Context) error {
 			return err
 		}
 	}
-	// Start fresh: new metadata store gets written on first metadata change
-	f.meta = newMetadataStore()
+	// Start fresh: reset metadata store state in-place (avoids leaking writeLoop goroutine)
+	f.meta.mu.Lock()
+	f.meta.data = make(map[string]fileMetadata)
 	f.meta.root = f.root
+	f.meta.mu.Unlock()
 	f.cache = newStatCache()
 	return nil
 }
