@@ -21,10 +21,40 @@ import (
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/interop"
 	"github.com/hack-pad/hackpad/internal/log"
+	"github.com/hack-pad/hackpad/internal/opfs"
 	"github.com/hack-pad/hackpad/internal/process"
 	"github.com/hack-pad/hackpad/internal/promise"
 	"github.com/johnstarich/go/datasize"
 )
+
+func overlayOPFS(this js.Value, args []js.Value) interface{} {
+	resolve, reject, prom := promise.New()
+	go func() {
+		err := OverlayOPFS(args)
+		if err != nil {
+			reject(interop.WrapAsJSError(err, "Failed overlaying OPFS FS"))
+		} else {
+			log.Debug("Successfully overlayed OPFS FS")
+			resolve(nil)
+		}
+	}()
+	return prom.JSValue()
+}
+
+func OverlayOPFS(args []js.Value) (err error) {
+	if len(args) == 0 {
+		return errors.New("overlayOPFS: mount path is required")
+	}
+	mountPath := args[0].String()
+
+	// Use mount path as namespace for isolation (like separate IndexedDB databases)
+	namespace := mountPath
+	opfsFS, err := opfs.NewOPFS(namespace)
+	if err != nil {
+		return err
+	}
+	return fs.Overlay(mountPath, opfsFS)
+}
 
 func overlayIndexedDB(this js.Value, args []js.Value) interface{} {
 	resolve, reject, prom := promise.New()
