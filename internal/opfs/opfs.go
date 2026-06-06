@@ -5,6 +5,7 @@ package opfs
 import (
 	"context"
 	"errors"
+	"io"
 	"path"
 	"strings"
 	"sync"
@@ -364,6 +365,8 @@ func (f *OPFS) MkdirAll(pathStr string, perm hackpadfs.FileMode) error {
 		if err != nil {
 			return &hackpadfs.PathError{Op: "mkdir", Path: accum, Err: err}
 		}
+		f.meta.set(accum, fileMetadata{Mode: perm | hackpadfs.ModeDir, Mtime: time.Now(), Atime: time.Now()})
+		f.cache.invalidate(accum)
 	}
 	return nil
 }
@@ -413,47 +416,91 @@ func (f *OPFS) RemoveAll(name string) error {
 // Rename implements hackpadfs.RenameFS.
 // OPFS doesn't support native rename, so we copy + delete.
 func (f *OPFS) Rename(oldname, newname string) error {
-	srcFile, err := f.Open(oldname)
+	info, err := f.Stat(oldname)
 	if err != nil {
 		return &hackpadfs.PathError{Op: "rename", Path: oldname, Err: err}
 	}
-	defer srcFile.Close()
 
 	// Create parent directory for destination
 	if err := f.MkdirAll(path.Dir(newname), 0755); err != nil {
 		return &hackpadfs.PathError{Op: "rename", Path: newname, Err: err}
 	}
 
-	// Create destination file (truncate to handle retry with smaller content)
-	dstFile, err := f.OpenFile(newname, hackpadfs.FlagCreate|hackpadfs.FlagTruncate|hackpadfs.FlagWriteOnly, 0644)
-	if err != nil {
-		return &hackpadfs.PathError{Op: "rename", Path: newname, Err: err}
-	}
+	if info.IsDir() {
+		// Create destination directory with same mode
+		if err := f.Mkdir(newname, info.Mode().Perm()); err != nil {
+			return &hackpadfs.PathError{Op: "rename", Path: newname, Err: err}
+		}
 
-	// Copy contents
-	buf := make([]byte, 32768)
-	for {
-		n, readErr := srcFile.Read(buf)
-		if n > 0 {
-			if _, writeErr := dstFile.(hackpadfs.ReadWriterFile).Write(buf[:n]); writeErr != nil {
-				dstFile.Close()
-				return &hackpadfs.PathError{Op: "rename", Path: newname, Err: writeErr}
+		// Recursively rename children
+		dir, err := f.Open(oldname)
+		if err != nil {
+			return &hackpadfs.PathError{Op: "rename", Path: oldname, Err: err}
+		}
+		entries, err := dir.(hackpadfs.DirReaderFile).ReadDir(-1)
+		dir.Close()
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			childOld := path.Join(oldname, entry.Name())
+			childNew := path.Join(newname, entry.Name())
+			if err := f.Rename(childOld, childNew); err != nil {
+				return err
 			}
 		}
-		if readErr != nil {
-			break
+
+		// Copy metadata
+		if meta, ok := f.meta.get(oldname); ok {
+			f.meta.set(newname, meta)
 		}
-	}
-	dstFile.Close()
 
-	// Copy metadata
-	if meta, ok := f.meta.get(oldname); ok {
-		f.meta.set(newname, meta)
-	}
+		// Remove old directory (should be empty now)
+		if err := f.Remove(oldname); err != nil {
+			return err
+		}
+	} else {
+		srcFile, err := f.Open(oldname)
+		if err != nil {
+			return &hackpadfs.PathError{Op: "rename", Path: oldname, Err: err}
+		}
+		defer srcFile.Close()
 
-	// Remove old file
-	if err := f.Remove(oldname); err != nil {
-		return err
+		// Create destination file (truncate to handle retry with smaller content)
+		dstFile, err := f.OpenFile(newname, hackpadfs.FlagCreate|hackpadfs.FlagTruncate|hackpadfs.FlagWriteOnly, 0644)
+		if err != nil {
+			return &hackpadfs.PathError{Op: "rename", Path: newname, Err: err}
+		}
+
+		// Copy contents
+		buf := make([]byte, 32768)
+		for {
+			n, readErr := srcFile.Read(buf)
+			if n > 0 {
+				if _, writeErr := dstFile.(hackpadfs.ReadWriterFile).Write(buf[:n]); writeErr != nil {
+					dstFile.Close()
+					return &hackpadfs.PathError{Op: "rename", Path: newname, Err: writeErr}
+				}
+			}
+			if readErr != nil {
+				if readErr != io.EOF {
+					dstFile.Close()
+					return &hackpadfs.PathError{Op: "rename", Path: oldname, Err: readErr}
+				}
+				break
+			}
+		}
+		dstFile.Close()
+
+		// Copy metadata
+		if meta, ok := f.meta.get(oldname); ok {
+			f.meta.set(newname, meta)
+		}
+
+		// Remove old file
+		if err := f.Remove(oldname); err != nil {
+			return err
+		}
 	}
 
 	f.cache.invalidate(oldname)

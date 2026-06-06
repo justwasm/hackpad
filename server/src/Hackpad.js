@@ -23,10 +23,10 @@ async function init() {
 
   const mkdir = promisify(fs.mkdir)
   await mkdir("/bin", {mode: 0o700})
-  await hackpad.overlayOPFS('/bin', {cache: true})
+  await hackpad.overlayOPFS('/bin')
   await hackpad.overlayOPFS('/home/me')
   await mkdir("/home/me/.cache", {recursive: true, mode: 0o700})
-  await hackpad.overlayOPFS('/home/me/.cache', {cache: true})
+  await hackpad.overlayOPFS('/home/me/.cache')
 
   await mkdir("/usr/local/go", {recursive: true, mode: 0o700})
   await hackpad.overlayTarGzip('/usr/local/go', 'wasm/go.tar.gz', {

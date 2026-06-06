@@ -166,8 +166,9 @@ func (f *FileDescriptors) Fstat(fd FID) (os.FileInfo, error) {
 		return nil, interop.BadFileNumber(fd)
 	}
 	// Use the open file's own Stat() first, so pending writes via WritableFileStream
-	// are flushed before reading. Fall back to the filesystem store for metadata-only
-	// changes (e.g., Chmod by path) that don't affect the open file descriptor.
+	// are flushed and committed data is visible. Fall back to the filesystem store
+	// if the file handle's Stat() fails (e.g., pipes or special devices not tracked
+	// in the filesystem).
 	info, err := fileDescriptor.file.Stat()
 	if err == nil {
 		return info, nil
