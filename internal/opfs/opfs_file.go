@@ -142,7 +142,7 @@ func (f *opfsFile) readBlobAt(length int, off int64) (blob.Blob, int, error) {
 	}
 	f.mu.Unlock()
 
-	size := int64(f.file.Get("size").Int())
+	size := int64(f.file.Get("size").Float())
 	if off >= size {
 		return blob.NewBytes(nil), 0, io.EOF
 	}
@@ -269,10 +269,23 @@ func (f *opfsFile) Write(p []byte) (int, error) {
 		}
 		f.writer = writer
 	} else if f.append {
-		// Writer already exists — re-read live file size for append position
+		// Close existing writer to flush pending data, then re-create
+		// so getFile() returns the correct (committed) size.
+		existingWriter := f.writer
+		f.writer = js.Undefined()
+		if _, err := awaitErr(existingWriter.Call("close")); err != nil {
+			f.mu.Unlock()
+			return 0, err
+		}
+		newWriter, err := awaitErr(f.handle.Call("createWritable", map[string]any{"keepExistingData": true}))
+		if err != nil {
+			f.mu.Unlock()
+			return 0, err
+		}
+		f.writer = newWriter
 		file, err := awaitErr(f.handle.Call("getFile"))
 		if err == nil {
-			f.offset = int64(file.Get("size").Int())
+			f.offset = int64(file.Get("size").Float())
 		}
 	}
 	offset := f.offset
@@ -344,7 +357,7 @@ func (f *opfsFile) Seek(offset int64, whence int) (int64, error) {
 			}
 			f.file = file
 		}
-		newOffset = int64(f.file.Get("size").Int()) + offset
+		newOffset = int64(f.file.Get("size").Float()) + offset
 	default:
 		return 0, &hackpadfs.PathError{Op: "seek", Path: f.name, Err: hackpadfs.ErrInvalid}
 	}

@@ -213,7 +213,7 @@ func (f *OPFS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpad
 		if appendMode {
 			file, err := awaitErr(fileHandle.Call("getFile"))
 			if err == nil {
-				writeOffset = int64(file.Get("size").Int())
+				writeOffset = int64(file.Get("size").Float())
 			}
 		}
 
@@ -573,11 +573,8 @@ func (f *OPFS) Clear(ctx context.Context) error {
 			return err
 		}
 	}
-	// Start fresh: reset metadata store state in-place (avoids leaking writeLoop goroutine)
-	f.meta.mu.Lock()
-	f.meta.data = make(map[string]fileMetadata)
-	f.meta.root = f.root
-	f.meta.mu.Unlock()
+	// Start fresh: reset metadata store in-place (avoids leaking writeLoop goroutine)
+	f.meta.reset(f.root)
 	f.cache = newStatCache()
 	return nil
 }
@@ -618,7 +615,7 @@ func (f *OPFS) statFile(name string, handle js.Value) (hackpadfs.FileInfo, error
 		if err != nil {
 			return nil, err
 		}
-		size = int64(file.Get("size").Int())
+		size = int64(file.Get("size").Float())
 		jsMtime = time.UnixMilli(int64(file.Get("lastModified").Int()))
 	}
 

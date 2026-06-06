@@ -209,6 +209,14 @@ func (m *metadataStore) scheduleWrite() {
 	}
 }
 
+// reset clears all metadata in-place (avoids leaking the writeLoop goroutine).
+func (m *metadataStore) reset(root js.Value) {
+	m.mu.Lock()
+	m.data = make(map[string]fileMetadata)
+	m.root = root
+	m.mu.Unlock()
+}
+
 // awaitErr awaits a JS promise and returns the result or error.
 func awaitErr(promise js.Value) (js.Value, error) {
 	ch := make(chan struct {
