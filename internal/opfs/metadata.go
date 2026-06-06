@@ -25,17 +25,19 @@ type fileMetadata struct {
 // Uses JSON format for simplicity (no extra dependencies).
 // Writes are debounced (100ms) to avoid excessive OPFS write operations.
 type metadataStore struct {
-	mu           sync.RWMutex
-	data         map[string]fileMetadata
-	dirty        bool
-	writePending bool
-	root         js.Value
+	mu      sync.RWMutex
+	data    map[string]fileMetadata
+	root    js.Value
+	writeCh chan struct{}
 }
 
 func newMetadataStore() *metadataStore {
-	return &metadataStore{
-		data: make(map[string]fileMetadata),
+	ms := &metadataStore{
+		data:    make(map[string]fileMetadata),
+		writeCh: make(chan struct{}, 1),
 	}
+	go ms.writeLoop()
+	return ms
 }
 
 func (m *metadataStore) load(root js.Value) error {
@@ -74,6 +76,55 @@ func (m *metadataStore) load(root js.Value) error {
 	m.data = metadata
 	m.mu.Unlock()
 	return nil
+}
+
+func (m *metadataStore) writeLoop() {
+	for range m.writeCh {
+		// Debounce: accumulate writes within 100ms
+		time.Sleep(100 * time.Millisecond)
+
+		// Drain any accumulated signals (non-blocking)
+		for len(m.writeCh) > 0 {
+			<-m.writeCh
+		}
+
+		// Wait until root is set (defensive guard)
+		m.mu.RLock()
+		data := make(map[string]fileMetadata, len(m.data))
+		for k, v := range m.data {
+			data[k] = v
+		}
+		root := m.root
+		m.mu.RUnlock()
+
+		if root.Type() == js.TypeUndefined {
+			continue
+		}
+
+		b, err := json.Marshal(data)
+		if err != nil {
+			continue
+		}
+
+		fileHandle, err := awaitErr(root.Call("getFileHandle", metaFileName, map[string]any{"create": true}))
+		if err != nil {
+			continue
+		}
+
+		writable, err := awaitErr(fileHandle.Call("createWritable", map[string]any{"keepExistingData": false}))
+		if err != nil {
+			continue
+		}
+
+		jsBuf := js.Global().Get("Uint8Array").New(len(b))
+		js.CopyBytesToJS(jsBuf, b)
+		_, err = awaitErr(writable.Call("write", map[string]any{"type": "write", "data": jsBuf, "position": 0}))
+		if err != nil {
+			writable.Call("close")
+			continue
+		}
+		awaitErr(writable.Call("close"))
+	}
 }
 
 func (m *metadataStore) get(path string) (fileMetadata, bool) {
@@ -139,67 +190,10 @@ func (m *metadataStore) del(path string) {
 }
 
 func (m *metadataStore) scheduleWrite() {
-	m.mu.Lock()
-	m.dirty = true
-	if m.writePending {
-		m.mu.Unlock()
-		return
+	select {
+	case m.writeCh <- struct{}{}:
+	default:
 	}
-	m.writePending = true
-	m.mu.Unlock()
-
-	time.AfterFunc(100*time.Millisecond, func() {
-		m.flush()
-	})
-}
-
-func (m *metadataStore) flush() {
-	m.mu.Lock()
-	if !m.dirty {
-		m.writePending = false
-		m.mu.Unlock()
-		return
-	}
-	m.dirty = false
-	m.writePending = false
-
-	data := make(map[string]fileMetadata, len(m.data))
-	for k, v := range m.data {
-		data[k] = v
-	}
-	m.mu.Unlock()
-
-	root := func() js.Value {
-		m.mu.RLock()
-		defer m.mu.RUnlock()
-		return m.root
-	}()
-
-	go func() {
-		b, err := json.Marshal(data)
-		if err != nil {
-			return
-		}
-
-		fileHandle, err := awaitErr(root.Call("getFileHandle", metaFileName, map[string]any{"create": true}))
-		if err != nil {
-			return
-		}
-
-		writable, err := awaitErr(fileHandle.Call("createWritable", map[string]any{"keepExistingData": false}))
-		if err != nil {
-			return
-		}
-
-		jsBuf := js.Global().Get("Uint8Array").New(len(b))
-		js.CopyBytesToJS(jsBuf, b)
-		_, err = awaitErr(writable.Call("write", map[string]any{"type": "write", "data": jsBuf, "position": 0}))
-		if err != nil {
-			writable.Call("close")
-			return
-		}
-		awaitErr(writable.Call("close"))
-	}()
 }
 
 // awaitErr awaits a JS promise and returns the result or error.

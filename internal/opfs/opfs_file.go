@@ -52,6 +52,9 @@ var (
 )
 
 func (f *opfsFile) Stat() (hackpadfs.FileInfo, error) {
+	f.writeMu.Lock()
+	defer f.writeMu.Unlock()
+
 	f.mu.Lock()
 	if f.closed {
 		f.mu.Unlock()
@@ -63,7 +66,10 @@ func (f *opfsFile) Stat() (hackpadfs.FileInfo, error) {
 		f.writer = js.Undefined()
 		f.file = js.Undefined()
 		f.mu.Unlock()
-		awaitErr(writer.Call("close"))
+		_, err := awaitErr(writer.Call("close"))
+		if err != nil {
+			return nil, err
+		}
 		f.mu.Lock()
 	}
 	f.mu.Unlock()
@@ -99,6 +105,9 @@ func (f *opfsFile) ReadBlobAt(length int, off int64) (blob.Blob, int, error) {
 }
 
 func (f *opfsFile) readBlobAt(length int, off int64) (blob.Blob, int, error) {
+	f.writeMu.Lock()
+	defer f.writeMu.Unlock()
+
 	f.mu.Lock()
 	if f.closed {
 		f.mu.Unlock()
@@ -117,7 +126,10 @@ func (f *opfsFile) readBlobAt(length int, off int64) (blob.Blob, int, error) {
 		f.file = js.Undefined()
 		f.mu.Unlock()
 		// close commits pending writes to OPFS
-		awaitErr(writer.Call("close"))
+		_, err := awaitErr(writer.Call("close"))
+		if err != nil {
+			return blob.NewBytes(nil), 0, err
+		}
 		f.mu.Lock()
 	}
 	if f.file.IsUndefined() {

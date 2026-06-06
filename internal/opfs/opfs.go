@@ -170,6 +170,15 @@ func (f *OPFS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpad
 	}
 
 	if create {
+		// O_EXCL: fail if file already exists
+		if flag&hackpadfs.FlagExclusive != 0 {
+			if _, err := awaitErr(dirHandle.Call("getFileHandle", baseName, map[string]any{"create": false})); err == nil {
+				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: hackpadfs.ErrExist}
+			} else if !isOPFSNotFound(err) {
+				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
+			}
+		}
+
 		fileHandle, err := awaitErr(dirHandle.Call("getFileHandle", baseName, map[string]any{"create": true}))
 		if err != nil {
 			return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
