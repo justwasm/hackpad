@@ -75,6 +75,17 @@ func (c *statCache) setErr(key string, err error) {
 	c.entries[key] = &statCacheEntry{err: err, cachedAt: time.Now()}
 }
 
+func (c *statCache) invalidatePrefix(prefix string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	prefix += "/"
+	for k := range c.entries {
+		if strings.HasPrefix(k, prefix) || k == prefix[:len(prefix)-1] {
+			delete(c.entries, k)
+		}
+	}
+}
+
 func (c *statCache) invalidate(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -417,8 +428,8 @@ func (f *OPFS) RemoveAll(name string) error {
 		}
 		return &hackpadfs.PathError{Op: "removeall", Path: name, Err: err}
 	}
-	f.meta.del(name)
-	f.cache.invalidate(name)
+	f.meta.delPrefix(name)
+	f.cache.invalidatePrefix(name)
 	return nil
 }
 

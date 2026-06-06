@@ -4,6 +4,7 @@ package opfs
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 	"syscall/js"
 	"time"
@@ -185,6 +186,18 @@ func (m *metadataStore) setChown(path string, uid, gid int) {
 func (m *metadataStore) del(path string) {
 	m.mu.Lock()
 	delete(m.data, path)
+	m.mu.Unlock()
+	m.scheduleWrite()
+}
+
+func (m *metadataStore) delPrefix(prefix string) {
+	m.mu.Lock()
+	prefix += "/"
+	for k := range m.data {
+		if strings.HasPrefix(k, prefix) || k == prefix[:len(prefix)-1] {
+			delete(m.data, k)
+		}
+	}
 	m.mu.Unlock()
 	m.scheduleWrite()
 }
