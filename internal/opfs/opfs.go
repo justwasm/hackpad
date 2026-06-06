@@ -185,7 +185,7 @@ func (f *OPFS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpad
 			return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
 		}
 
-		if truncate {
+		if truncate && !readonly {
 			writable, err := awaitErr(fileHandle.Call("createWritable", map[string]any{"keepExistingData": false}))
 			if err != nil {
 				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
@@ -209,7 +209,7 @@ func (f *OPFS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpad
 			name:     name,
 			handle:   fileHandle,
 			append:   appendMode,
-			readonly: false,
+			readonly: readonly,
 			offset:   writeOffset,
 		}, nil
 	}
@@ -218,6 +218,15 @@ func (f *OPFS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpad
 	fileHandle, fileErr := awaitErr(dirHandle.Call("getFileHandle", baseName, map[string]any{"create": false}))
 	if fileErr == nil {
 		f.cache.invalidate(name)
+
+		if truncate && !readonly {
+			writable, err := awaitErr(fileHandle.Call("createWritable", map[string]any{"keepExistingData": false}))
+			if err != nil {
+				return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
+			}
+			awaitErr(writable.Call("close"))
+		}
+
 		return &opfsFile{
 			fsys:     f,
 			name:     name,
