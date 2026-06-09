@@ -83,6 +83,9 @@ func (p *process) startWasmPromise(path string, exitChan chan<- int) (promise.Pr
 		defer func() {
 			if r := recover(); r != nil {
 				log.ErrorJSValues("panic in process resume:", r)
+				goInstance.Set("exited", true)
+				exitChan <- 1
+				goInstance.Call("_resolveExitPromise")
 				ret = nil
 			}
 		}()
