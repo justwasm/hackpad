@@ -74,21 +74,29 @@ func (p *process) startWasmPromise(path string, exitChan chan<- int) (promise.Pr
 
 	exports := instance.Get("exports")
 
-	resumeFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		defer interop.PanicLogger()
+	resumeFunc := js.FuncOf(func(this js.Value, args []js.Value) (ret interface{}) {
 		prev := switchContext(p.pid)
-		ret := exports.Call("resume", interop.SliceFromJSValues(args)...)
-		switchContext(prev)
-		return ret
+		defer switchContext(prev)
+		defer func() {
+			if r := recover(); r != nil {
+				log.ErrorJSValues("panic in process resume:", r)
+				ret = nil
+			}
+		}()
+		return exports.Call("resume", interop.SliceFromJSValues(args)...)
 	})
 	resumeFuncPtr = &resumeFunc
 	wrapperExports := map[string]interface{}{
-		"run": interop.SingleUseFunc(func(this js.Value, args []js.Value) interface{} {
-			defer interop.PanicLogger()
+		"run": interop.SingleUseFunc(func(this js.Value, args []js.Value) (ret interface{}) {
 			prev := switchContext(p.pid)
-			ret := exports.Call("run", interop.SliceFromJSValues(args)...)
-			switchContext(prev)
-			return ret
+			defer switchContext(prev)
+			defer func() {
+				if r := recover(); r != nil {
+					log.ErrorJSValues("panic in process run:", r)
+					ret = nil
+				}
+			}()
+			return exports.Call("run", interop.SliceFromJSValues(args)...)
 		}),
 		"resume": resumeFunc,
 	}
