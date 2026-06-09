@@ -17,6 +17,7 @@ type FID = common.FID
 
 // uint64Dec is added to a uint64 to decrement it by 1 (two's complement wrapping subtraction).
 const uint64Dec = ^uint64(0)
+
 type fileDescriptor struct {
 	id FID
 	*fileCore

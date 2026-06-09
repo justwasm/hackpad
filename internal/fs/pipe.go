@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"io"
 	"os"
 	"time"
 
@@ -17,17 +16,25 @@ func (f *FileDescriptors) Pipe() [2]FID {
 	return [2]FID{r.id, w.id}
 }
 
+type pipeCore interface {
+	Read([]byte) (int, error)
+	Write([]byte) (int, error)
+	Close() error
+	Stat() (os.FileInfo, error)
+	Sync() error
+}
+
 func newPipe(newFID func() FID) (r, w *fileDescriptor) {
 	readerFID, writerFID := newFID(), newFID()
-	pipeC := newPipeChan(readerFID, writerFID)
-	rPipe := &namedPipe{pipeChan: pipeC, fid: readerFID}
+	pipeC := newPipeImpl(readerFID, writerFID)
+	rPipe := &namedPipe{pipe: pipeC, fid: readerFID}
 	r = newIrregularFileDescriptor(
 		readerFID,
 		rPipe.Name(),
 		&pipeReadOnly{rPipe},
 		os.ModeNamedPipe,
 	)
-	wPipe := &namedPipe{pipeChan: pipeC, fid: writerFID}
+	wPipe := &namedPipe{pipe: pipeC, fid: writerFID}
 	w = newIrregularFileDescriptor(
 		writerFID,
 		wPipe.Name(),
@@ -35,22 +42,6 @@ func newPipe(newFID func() FID) (r, w *fileDescriptor) {
 		os.ModeNamedPipe,
 	)
 	return
-}
-
-type pipeChan struct {
-	buf            chan byte
-	done           chan struct{}
-	reader, writer FID
-}
-
-func newPipeChan(reader, writer FID) *pipeChan {
-	const maxPipeBuffer = 32 << 10 // 32KiB
-	return &pipeChan{
-		buf:    make(chan byte, maxPipeBuffer),
-		done:   make(chan struct{}),
-		reader: reader,
-		writer: writer,
-	}
 }
 
 type pipeStat struct {
@@ -66,74 +57,16 @@ func (p pipeStat) ModTime() time.Time { return time.Time{} }
 func (p pipeStat) IsDir() bool        { return false }
 func (p pipeStat) Sys() interface{}   { return nil }
 
-func (p *pipeChan) Stat() (os.FileInfo, error) {
-	return &pipeStat{
-		name: "",
-		size: int64(len(p.buf)),
-		mode: os.ModeNamedPipe,
-	}, nil
-}
-
-func (p *pipeChan) Sync() error {
-	timer := time.NewTimer(time.Second)
-	defer timer.Stop()
-	select {
-	case <-p.done:
-		return nil
-	case <-timer.C:
-		return io.ErrNoProgress
-	}
-}
-
-func (p *pipeChan) Read(buf []byte) (n int, err error) {
-	for n < len(buf) {
-		// Read should always block if the pipe is not closed
-		b, ok := <-p.buf
-		if !ok {
-			err = io.EOF
-			return
-		}
-		buf[n] = b
-		n++
-	}
-	if n == 0 {
-		err = io.EOF
-	}
-	return
-}
-
-func (p *pipeChan) Write(buf []byte) (n int, err error) {
-	for _, b := range buf {
-		select {
-		case <-p.done:
-			// do not allow writes to a closed pipe
-			return 0, interop.BadFileNumber(p.writer)
-		case p.buf <- b:
-			n++
-			// no default case allowed, Write should always return immediately if the pipe buffer has space, otherwise it should block
-		}
-	}
-	if n < len(buf) {
-		err = io.ErrShortWrite
-	}
-	return
-}
-
-func (p *pipeChan) Close() error {
-	select {
-	case <-p.done:
-		return interop.BadFileNumber(p.writer)
-	default:
-		close(p.done)
-		close(p.buf)
-		return nil
-	}
-}
-
 type namedPipe struct {
-	*pipeChan
-	fid FID
+	pipe pipeCore
+	fid  FID
 }
+
+func (n *namedPipe) Read(buf []byte) (int, error)  { return n.pipe.Read(buf) }
+func (n *namedPipe) Write(buf []byte) (int, error) { return n.pipe.Write(buf) }
+func (n *namedPipe) Close() error                  { return n.pipe.Close() }
+func (n *namedPipe) Stat() (os.FileInfo, error)    { return n.pipe.Stat() }
+func (n *namedPipe) Sync() error                   { return n.pipe.Sync() }
 
 func (n *namedPipe) Name() string {
 	return "pipe" + n.fid.String()
