@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	goBinaryPath      = "/usr/local/go/bin/js_wasm/go"
+	goBinaryPath      = "/usr/local/go/bin/go"
 	buildConsoleIndex = 0
 )
 

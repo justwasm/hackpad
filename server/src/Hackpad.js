@@ -15,7 +15,7 @@ async function init() {
     'GOPROXY': 'https://goproxy.up.railway.app/',
     'GOROOT': '/usr/local/go',
     'HOME': '/home/me',
-    'PATH': '/bin:/home/me/go/bin:/usr/local/go/bin/js_wasm:/usr/local/go/pkg/tool/js_wasm',
+    'PATH': '/bin:/home/me/go/bin:/usr/local/go/bin/',
   }
   go.run(cmd.instance)
   const { hackpad, fs } = window
@@ -29,10 +29,10 @@ async function init() {
   await hackpad.overlayIndexedDB('/home/me/.cache', {cache: true})
 
   await mkdir("/usr/local/go", {recursive: true, mode: 0o700})
-  await hackpad.overlayTarGzip('/usr/local/go', 'wasm/go.tar.gz', {
+  await hackpad.overlayTarGzip('/usr/local/', 'wasm/go.tar.gz', {
     persist: true,
     skipCacheDirs: [
-      '/usr/local/go/bin/js_wasm',
+      '/usr/local/go/bin',
       '/usr/local/go/pkg/tool/js_wasm',
     ],
     progress: percentage => {
