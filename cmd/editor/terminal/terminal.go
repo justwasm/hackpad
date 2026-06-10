@@ -136,6 +136,7 @@ func (t *terminal) readOutputPipes(r io.Reader) {
 			return
 		default:
 			log.Error("Failed to write to terminal:", err)
+			return
 		}
 	}
 }

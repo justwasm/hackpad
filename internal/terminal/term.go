@@ -104,11 +104,14 @@ func readOutputPipes(term js.Value, files *fs.FileDescriptors, output fs.FID) {
 		panic(err)
 	}
 	for {
-		_, err := files.Read(output, buf, 0, buf.Len(), nil)
+		n, err := files.Read(output, buf, 0, buf.Len(), nil)
 		if err != nil {
 			log.Error("Failed to write to terminal:", err)
-		} else {
-			term.Call("write", buf)
+			return
 		}
+		if n == 0 {
+			return
+		}
+		term.Call("write", buf)
 	}
 }
