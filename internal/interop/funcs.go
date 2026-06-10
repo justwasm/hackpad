@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall/js"
 
+	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/log"
 	"github.com/pkg/errors"
 )
@@ -55,6 +56,7 @@ func setFuncHandler(name string, fn interface{}, args []js.Value) (returnedVal i
 		// error always goes first
 		callback := args[len(args)-1]
 		args = args[:len(args)-1]
+		capturedPID := common.GetCurrentPID()
 		go func() {
 			var ret []interface{}
 			var err error
@@ -66,6 +68,10 @@ func setFuncHandler(name string, fn interface{}, args []js.Value) (returnedVal i
 					log.DebugJSValues("completed op: "+name, ret)
 				}
 			}()
+
+			prev := common.GetCurrentPID()
+			common.SetCurrentPID(capturedPID)
+			defer common.SetCurrentPID(prev)
 
 			ret, err = fn(args)
 			errValue := wrapAsJSError(err, name, args...)

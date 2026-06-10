@@ -4,6 +4,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/log"
 )
@@ -11,9 +12,7 @@ import (
 const initialDirectory = "/home/me"
 
 var (
-	currentPID PID
-
-	switchedContextListener func(newPID, parentPID PID)
+	switchedContextListener func(newPID, parentPID common.PID)
 )
 
 func Init(switchedContext func(PID, PID)) {
@@ -39,20 +38,20 @@ func Init(switchedContext func(PID, PID)) {
 	switchContext(minPID)
 }
 
-func switchContext(pid PID) (prev PID) {
-	prev = currentPID
+func switchContext(pid common.PID) (prev common.PID) {
+	prev = common.GetCurrentPID()
 	log.Debug("Switching context from PID ", prev, " to ", pid)
 	if pid == prev {
 		return
 	}
 	newProcess := pids[pid]
-	currentPID = pid
+	common.SetCurrentPID(pid)
 	switchedContextListener(pid, newProcess.parentPID)
 	return
 }
 
 func Current() Process {
-	process, _ := Get(currentPID)
+	process, _ := Get(common.GetCurrentPID())
 	return process
 }
 
