@@ -165,15 +165,15 @@ func (f *FileDescriptors) Fstat(fd FID) (os.FileInfo, error) {
 	if fileDescriptor == nil {
 		return nil, interop.BadFileNumber(fd)
 	}
-	// Read fresh stats from the filesystem store so that mode changes made via
-	// Fchmod (or Chmod by path) are visible in subsequent Fstat calls.
-	// Fall back to the open file's Stat() for special files (pipes, dev/*)
-	// that are not tracked in the filesystem store.
-	info, err := hackpadfs.Stat(filesystem, fileDescriptor.FileName())
-	if err != nil {
-		return fileDescriptor.file.Stat()
+	// Use the open file's own Stat() first, so pending writes via WritableFileStream
+	// are flushed and committed data is visible. Fall back to the filesystem store
+	// if the file handle's Stat() fails (e.g., pipes or special devices not tracked
+	// in the filesystem).
+	info, err := fileDescriptor.file.Stat()
+	if err == nil {
+		return info, nil
 	}
-	return info, nil
+	return hackpadfs.Stat(filesystem, fileDescriptor.FileName())
 }
 
 func (f *FileDescriptors) ReadDir(path string) ([]hackpadfs.DirEntry, error) {

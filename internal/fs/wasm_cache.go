@@ -79,6 +79,9 @@ func (w *wasmCacheFs) WasmInstance(path string, importObject js.Value) (js.Value
 			log.Debug("reading file failed: ", path)
 			return js.Value{}, err
 		}
+		if moduleBlob == nil {
+			return js.Value{}, &hackpadfs.PathError{Op: "read", Path: path, Err: hackpadfs.ErrNotExist}
+		}
 		module = idbblob.FromBlob(moduleBlob).JSValue()
 		if !module.Truthy() {
 			log.Debug("fs miss: ", path, module.Length())
