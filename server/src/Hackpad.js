@@ -11,11 +11,20 @@ async function init() {
   const go = new Go();
   const cmd = await WebAssembly.instantiateStreaming(fetch(`wasm/main.wasm`), go.importObject)
   go.env = {
+    'TERM': 'xterm-256color',
+    'COLORTERM': 'truecolor',
+    'CLICOLOR_FORCE': '1',
+    'CRUSH_CORE_UTILS': '1',
+    'CRUSH_DISABLE_PROVIDER_AUTO_UPDATE': '1',
+    'DO_NOT_TRACK': '1',
     'GOMODCACHE': '/home/me/.cache/go-mod',
-    'GOPROXY': 'https://goproxy.up.railway.app/',
+    'GOPROXY': 'https://goproxy.up.railway.app',
+    'GONOSUMDB': '*',
     'GOROOT': '/usr/local/go',
     'HOME': '/home/me',
-    'PATH': '/bin:/home/me/go/bin:/usr/local/go/bin/',
+    'PATH': '/bin:/home/me/go/bin:/usr/local/go/bin/:/home/me/wanix',
+    'USER': 'me',
+    'WANIX': '/home/me/wanix',
   }
   go.run(cmd.instance)
   const { hackpad, fs } = window
