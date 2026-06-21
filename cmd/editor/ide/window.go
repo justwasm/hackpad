@@ -4,6 +4,7 @@ package ide
 
 import (
 	_ "embed"
+	"fmt"
 	"go/format"
 	"os"
 	"strings"
@@ -76,6 +77,51 @@ func New(elem *dom.Element, editorBuilder EditorBuilder, consoleBuilder ConsoleB
 		w.consoles = newConsoles
 	})
 	w.panesElem.AppendChild(w.consolesPane.Element)
+
+	// Resizable divider between panes
+	divider := dom.New("div")
+	divider.AddClass("pane-divider")
+	w.panesElem.InsertBefore(divider, w.consolesPane.Element)
+
+	// Resizable divider between panes (supports mouse and touch via Pointer Events)
+	divider.AddEventListener("pointerdown", func(event js.Value) {
+		event.Call("preventDefault")
+		divider.JSValue().Call("setPointerCapture", event.Get("pointerId"))
+		divider.AddClass("active")
+		startY := event.Get("clientY").Float()
+		startHeight := w.editorsPane.GetProperty("offsetHeight").Float()
+
+		moveFn := js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+			ev := args[0]
+			panesRect := w.panesElem.GetBoundingClientRect()
+			deltaY := ev.Get("clientY").Float() - startY
+			newHeight := startHeight + deltaY
+			if newHeight < 30 {
+				newHeight = 30
+			}
+			maxHeight := panesRect.Height - 30
+			if newHeight > maxHeight {
+				newHeight = maxHeight
+			}
+			w.editorsPane.SetStyle(map[string]interface{}{
+				"flex":   "none",
+				"height": fmt.Sprintf("%.0fpx", newHeight),
+			})
+			return nil
+		})
+		var upFn js.Func
+		upFn = js.FuncOf(func(_ js.Value, args []js.Value) interface{} {
+			divider.RemoveClass("active")
+			divider.JSValue().Call("releasePointerCapture", event.Get("pointerId"))
+			js.Global().Get("document").Call("removeEventListener", "pointermove", moveFn)
+			js.Global().Get("document").Call("removeEventListener", "pointerup", upFn)
+			moveFn.Release()
+			upFn.Release()
+			return nil
+		})
+		js.Global().Get("document").Call("addEventListener", "pointermove", moveFn)
+		js.Global().Get("document").Call("addEventListener", "pointerup", upFn)
+	})
 
 	w.controlButtons[0].AddEventListener("click", func(event js.Value) {
 		w.consolesPane.Focus(buildConsoleIndex)
