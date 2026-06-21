@@ -3,6 +3,9 @@ import React from 'react';
 import '@xterm/xterm/css/xterm.css';
 import { Terminal as XTerminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { ImageAddon } from '@xterm/addon-image';
+import { WebLinksAddon } from '@xterm/addon-web-links';
+import { ClipboardAddon } from '@xterm/addon-clipboard';
 import { listenColorScheme } from './ColorScheme';
 
 export default function Terminal({ args, ...props }) {
@@ -20,9 +23,17 @@ const fontScale = 0.85
 
 export function newTerminal(elem) {
   const fitAddon = new FitAddon()
+  const imageAddon = new ImageAddon()
   const term = new XTerminal({
+    convertEol: true,
+    cursorBlink: true,
+    allowTransparency: true,
+    scrollbar: { showScrollbar: false },
   })
   term.loadAddon(fitAddon)
+  term.loadAddon(imageAddon)
+  term.loadAddon(new WebLinksAddon())
+  term.loadAddon(new ClipboardAddon())
 
   const dark = "rgb(33, 33, 33)"
   const light = "white"
@@ -42,6 +53,12 @@ export function newTerminal(elem) {
   term.open(elem)
   term.options.cursorBlink = true
   term.focus()
+  term.parser.registerOscHandler(0, (data) => {
+    if (typeof term.__onXtermTitle === 'function') {
+      term.__onXtermTitle(data)
+    }
+    return true
+  })
   const fit = () => {
     const fontSize = parseFloat(getComputedStyle(elem).fontSize)
     term.options.fontSize = fontSize * fontScale

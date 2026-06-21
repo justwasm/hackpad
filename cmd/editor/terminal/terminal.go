@@ -38,6 +38,25 @@ func (b *terminalBuilder) New(elem *dom.Element, rawName, name string, args ...s
 		xterm:     b.newXTermFunc.Invoke(elem.JSValue()),
 		titleChan: make(chan string, 1),
 	}
+
+	titleFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) < 1 {
+			return nil
+		}
+		title := args[0].String()
+		select {
+		case <-term.titleChan:
+		default:
+		}
+		term.titleChan <- title
+		return nil
+	})
+	term.xterm.Set("__onXtermTitle", titleFunc)
+	term.closables = append(term.closables, func() error {
+		titleFunc.Release()
+		return nil
+	})
+
 	go func() {
 		err := term.start(rawName, name, args...)
 		if err != nil {
@@ -125,12 +144,12 @@ func (t *terminal) Close() error {
 }
 
 func (t *terminal) readOutputPipes(r io.Reader) {
-	buf := make([]byte, 1)
+	buf := make([]byte, 4096)
 	for {
-		_, err := r.Read(buf)
+		n, err := r.Read(buf)
 		switch err {
 		case nil:
-			t.xterm.Call("write", idbblob.FromBlob(blob.NewBytes(buf)).JSValue())
+			t.xterm.Call("write", idbblob.FromBlob(blob.NewBytes(buf[:n])).JSValue())
 		case io.EOF:
 			t.Close()
 			return
