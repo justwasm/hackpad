@@ -7,17 +7,17 @@ export default function Loading({ percentage }) {
     <div className="app-loading">
       <div className="app-loading-center">
         <div className="app-loading-spinner">
-          { percentage !== undefined ?
-            <span className="app-loading-percentage">{Math.round(percentage)}%</span>
-          : null }
-          <span className="fa fa-spin fa-circle-notch" />
+          <img className="app-loading-logo" src="icon.png" alt="" />
         </div>
         <p>
-          installing <span className="app-title">
-            <span className="app-title-hack">hack</span><span className="app-title-pad">pad</span>
-          </span>
+          installing <span className="app-title">go4js</span>
         </p>
-        <p><em>please wait...</em></p>
+        <div className="app-loading-bar">
+          <div className="app-loading-bar-fill" style={{ width: `${percentage || 0}%` }} />
+        </div>
+        { percentage !== undefined ?
+          <p className="app-loading-bar-text">{Math.round(percentage)}%</p>
+        : null }
       </div>
     </div>
   )

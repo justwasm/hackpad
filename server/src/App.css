@@ -50,21 +50,17 @@ h1.app-title {
 
 .app-title {
     font-family: var(--font-title);
+    font-size: 1em;
     font-weight: 400;
     letter-spacing: 0.03em;
     margin: 0 0.3em;
-}
-
-.app-title-hack {
-    display: inline-block;
-}
-
-.app-title-hack {
-    color: #f07178;
-}
-
-.app-title-pad {
     color: var(--app-title-highlight);
+}
+
+.app-icon {
+    height: 1.5em;
+    vertical-align: middle;
+    margin-right: 4px;
 }
 
 @media screen and (prefers-color-scheme: dark) {
