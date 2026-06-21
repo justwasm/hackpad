@@ -92,12 +92,6 @@ export async function spawn({ name, args, ...options }) {
   })
 }
 
-export async function spawnTerminal(term, options) {
-  await initOnce
-  const { hackpad } = window
-  return hackpad.spawnTerminal(term, options)
-}
-
 export async function mkdirAll(path) {
   await initOnce
   const { fs } = window

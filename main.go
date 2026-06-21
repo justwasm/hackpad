@@ -6,20 +6,19 @@ import (
 	"path/filepath"
 	"syscall/js"
 
+	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/global"
 	"github.com/hack-pad/hackpad/internal/install"
 	"github.com/hack-pad/hackpad/internal/interop"
-	"github.com/hack-pad/hackpad/internal/js/fs"
+	jsfs "github.com/hack-pad/hackpad/internal/js/fs"
 	"github.com/hack-pad/hackpad/internal/js/process"
 	"github.com/hack-pad/hackpad/internal/log"
 	libProcess "github.com/hack-pad/hackpad/internal/process"
-	"github.com/hack-pad/hackpad/internal/terminal"
 )
 
 func main() {
 	process.Init()
-	fs.Init()
-	global.Set("spawnTerminal", js.FuncOf(terminal.SpawnTerminal))
+	jsfs.Init()
 	global.Set("dump", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		go func() {
 			basePath := ""
@@ -33,7 +32,7 @@ func main() {
 			}
 			var fsDump interface{}
 			if basePath != "" {
-				fsDump = fs.Dump(basePath)
+				fsDump = jsfs.Dump(basePath)
 			}
 			log.Error("Process:\n", process.Dump(), "\n\nFiles:\n", fsDump)
 		}()
@@ -41,6 +40,25 @@ func main() {
 	}))
 	global.Set("profile", js.FuncOf(interop.ProfileJS))
 	global.Set("install", js.FuncOf(install.InstallFunc))
+	global.Set("setWinch", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) < 3 {
+			return nil
+		}
+		termID := args[0].String()
+		cols := args[1].Int()
+		rows := args[2].Int()
+		xpx := 0
+		ypx := 0
+		if len(args) >= 4 {
+			xpx = args[3].Int()
+		}
+		if len(args) >= 5 {
+			ypx = args[4].Int()
+		}
+
+		fs.DispatchWinch(termID, cols, rows, xpx, ypx)
+		return nil
+	}))
 	interop.SetInitialized()
 	select {}
 }

@@ -47,6 +47,12 @@ func (t *Tab) Focus() {
 	if firstInput != nil {
 		firstInput.Focus()
 	}
+	// Dispatch winch for terminal tabs becoming active. Call the fit
+	// closure stored on the DOM element by Terminal.js which measures
+	// the live layout and calls setWinch -> DispatchWinch.
+	if fn := t.contents.JSValue().Get("_onTabFocus"); !fn.IsUndefined() {
+		fn.Invoke()
+	}
 }
 
 func (t *Tab) Unfocus() {

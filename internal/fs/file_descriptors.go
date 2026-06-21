@@ -139,6 +139,10 @@ func getFile(absPath string, flags int, mode os.FileMode) (hackpadfs.File, error
 	case "dev/stderr":
 		return stderr, nil
 	}
+	if strings.HasPrefix(absPath, "winch/") {
+		termID := absPath[len("winch/"):]
+		return WinchManager.OpenWinch(termID, flags)
+	}
 	return hackpadfs.OpenFile(filesystem, absPath, flags, mode)
 }
 
@@ -197,7 +201,17 @@ func (f *FileDescriptors) Chmod(path string, mode os.FileMode) error {
 }
 
 func (f *FileDescriptors) Stat(path string) (os.FileInfo, error) {
-	return hackpadfs.Stat(filesystem, f.resolvePath(path))
+	absPath := f.resolvePath(path)
+	if strings.HasPrefix(absPath, "winch/") {
+		file, err := WinchManager.OpenWinch(absPath[len("winch/"):], 0)
+		if err != nil {
+			return nil, err
+		}
+		info, err := file.Stat()
+		file.Close()
+		return info, err
+	}
+	return hackpadfs.Stat(filesystem, absPath)
 }
 
 func (f *FileDescriptors) Lstat(path string) (os.FileInfo, error) {

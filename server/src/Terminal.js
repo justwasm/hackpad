@@ -63,22 +63,23 @@ export function newTerminal(elem) {
     const fontSize = parseFloat(getComputedStyle(elem).fontSize)
     term.options.fontSize = fontSize * fontScale
     fitAddon.fit()
+    const termID = elem.dataset?.termid || ''
+    window.hackpad?.setWinch?.(termID, term.cols, term.rows, elem.offsetWidth, elem.offsetHeight)
   }
 
   fit()
+  elem._onTabFocus = fit
   if (window.ResizeObserver) {
-    const parent = elem.parentNode
     const observer = new ResizeObserver(() => {
-      if (! elem.parentNode) {
-        // elem removed from DOM
-        observer.unobserve(parent)
+      if (!elem.parentNode) {
+        observer.disconnect()
         return
       }
       if (elem.classList.contains("active")) {
         fit()
       }
     })
-    observer.observe(parent)
+    observer.observe(elem.parentNode)
   } else {
     window.addEventListener('resize', fit)
   }

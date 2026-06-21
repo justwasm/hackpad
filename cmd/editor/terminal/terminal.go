@@ -4,12 +4,14 @@ package terminal
 
 import (
 	"io"
+	"os"
 	"os/exec"
 	"syscall/js"
 
 	"github.com/hack-pad/hackpad/cmd/editor/dom"
 	"github.com/hack-pad/hackpad/cmd/editor/ide"
 	"github.com/hack-pad/hackpad/internal/common"
+	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/log"
 	"github.com/hack-pad/hackpadfs/indexeddb/idbblob"
 	"github.com/hack-pad/hackpadfs/keyvalue/blob"
@@ -30,6 +32,7 @@ type terminal struct {
 	closables []func() error
 	cmd       *exec.Cmd
 	titleChan chan string
+	termID    string
 	closed    bool
 }
 
@@ -37,6 +40,16 @@ func (b *terminalBuilder) New(elem *dom.Element, rawName, name string, args ...s
 	term := &terminal{
 		xterm:     b.newXTermFunc.Invoke(elem.JSValue()),
 		titleChan: make(chan string, 1),
+		termID:    fs.WinchManager.NextTermID(),
+	}
+	fs.WinchManager.Register(term.termID)
+	elem.JSValue().Get("dataset").Set("termid", term.termID)
+
+	// Broadcast initial terminal size via JS global + CustomEvent.
+	cols := term.xterm.Get("cols").Int()
+	rows := term.xterm.Get("rows").Int()
+	if cols > 0 && rows > 0 {
+		fs.DispatchWinch(term.termID, cols, rows, 0, 0)
 	}
 
 	titleFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -74,6 +87,7 @@ func (t *terminal) start(rawName, name string, args ...string) error {
 	}
 	t.cmd = exec.Command(name, args...)
 	t.cmd.Path = rawName
+	t.cmd.Env = append(os.Environ(), "TERM_WINCH=/winch/"+t.termID)
 	stdin, err := t.cmd.StdinPipe()
 	if err != nil {
 		return err
@@ -130,6 +144,7 @@ func (t *terminal) Close() error {
 		return nil
 	}
 	t.closed = true
+	fs.WinchManager.Remove(t.termID)
 	const colorRed = "\033[1;31m"
 	t.xterm.Call("write", idbblob.FromBlob(blob.NewBytes([]byte("\n\r"+colorRed+"[exited]\n\r"))).JSValue())
 	var err error
