@@ -58,7 +58,9 @@ func (e *textAreaEditor) ReloadFile() error {
 	if err != nil {
 		return err
 	}
+	cursor := e.GetCursor()
 	e.textarea.SetValue(string(contents))
+	e.SetCursor(cursor)
 	return nil
 }
 

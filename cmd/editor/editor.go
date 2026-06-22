@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"syscall/js"
 	"time"
 
@@ -36,6 +37,8 @@ type jsEditor struct {
 	filePath  string
 	titleChan chan string
 	stopPoll  chan struct{}
+	mu        sync.Mutex
+	prevMtime time.Time
 }
 
 func (j *jsEditor) onEdit(js.Value, []js.Value) interface{} {
@@ -49,6 +52,14 @@ func (j *jsEditor) onEdit(js.Value, []js.Value) interface{} {
 		err = os.WriteFile(j.filePath, []byte(contents), perm)
 		if err != nil {
 			log.Error("Failed to write file contents: ", err)
+			return
+		}
+		// Sync mtime so the poller doesn't re-trigger on our own write
+		info, err = os.Stat(j.filePath)
+		if err == nil {
+			j.mu.Lock()
+			j.prevMtime = info.ModTime()
+			j.mu.Unlock()
 		}
 	}()
 	return nil
@@ -71,7 +82,9 @@ func (j *jsEditor) ReloadFile() error {
 	if err != nil {
 		return err
 	}
+	cursor := j.GetCursor()
 	j.elem.Call("setContents", string(contents))
+	j.SetCursor(cursor)
 	return nil
 }
 
@@ -86,17 +99,17 @@ func (j *jsEditor) Close() error {
 func (j *jsEditor) startFileWatcher() {
 	j.Close() // stop any previous watcher
 	j.stopPoll = make(chan struct{})
+	if info, err := os.Stat(j.filePath); err == nil {
+		j.mu.Lock()
+		j.prevMtime = info.ModTime()
+		j.mu.Unlock()
+	}
 	go j.pollFile(j.stopPoll)
 }
 
 func (j *jsEditor) pollFile(stop chan struct{}) {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
-
-	var prevMtime time.Time
-	if info, err := os.Stat(j.filePath); err == nil {
-		prevMtime = info.ModTime()
-	}
 
 	for {
 		select {
@@ -108,8 +121,13 @@ func (j *jsEditor) pollFile(stop chan struct{}) {
 				continue
 			}
 			mt := info.ModTime()
-			if !mt.Equal(prevMtime) {
-				prevMtime = mt
+			j.mu.Lock()
+			changed := !mt.Equal(j.prevMtime)
+			if changed {
+				j.prevMtime = mt
+			}
+			j.mu.Unlock()
+			if changed {
 				if err := j.ReloadFile(); err != nil {
 					log.Errorf("Failed to reload %s: %s", j.filePath, err.Error())
 				}
