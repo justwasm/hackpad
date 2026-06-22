@@ -22,7 +22,7 @@ export default function Compat() {
   }
   return (
     <div className="compat">
-      <p>Hackpad may not work reliably in your browser.</p>
+      <p>go4js may not work reliably in your browser.</p>
       <p>If you're experience any issues, try a recent version of {joinOr(knownWorkingBrowsers)} on a device with enough memory, like a PC.</p>
     </div>
   )
