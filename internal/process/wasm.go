@@ -75,6 +75,9 @@ func (p *process) startWasmPromise(path string, exitChan chan<- int) (promise.Pr
 	exports := instance.Get("exports")
 
 	resumeFunc := js.FuncOf(func(this js.Value, args []js.Value) (ret interface{}) {
+		if goInstance.Get("exited").Truthy() {
+			return nil
+		}
 		prev := switchContext(p.pid)
 		defer switchContext(prev)
 		defer func() {
