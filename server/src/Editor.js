@@ -21,6 +21,9 @@ window.MonacoEnvironment = {
 const THEME_LIGHT = 'vs';
 const THEME_DARK = 'vs-dark';
 
+// Holds the editor API object; Go adds getCompletions to it after creation.
+let editorApi = null;
+
 export function newEditor(elem, onEdit) {
   const editor = monaco.editor.create(elem, {
     language: 'plaintext',
@@ -49,7 +52,42 @@ export function newEditor(elem, onEdit) {
     dark: () => editor.updateOptions({ theme: THEME_DARK }),
   });
 
-  return {
+  // Register completion provider for Go
+  const completionDisposable = monaco.languages.registerCompletionItemProvider('go', {
+    provideCompletionItems: (model, position) => {
+      if (typeof editorApi?.getCompletions !== 'function') {
+        return { suggestions: [] };
+      }
+      const content = model.getValue();
+      const word = model.getWordAtPosition(position);
+      const items = editorApi.getCompletions(content, position.lineNumber, position.column);
+      if (!items || !items.length) {
+        return { suggestions: [] };
+      }
+      return {
+        suggestions: items.map(item => ({
+          label: item.label,
+          kind: item.kind,
+          detail: item.detail,
+          insertText: item.insertText,
+          range: word ? {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          } : {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: position.column,
+            endColumn: position.column,
+          },
+        })),
+      };
+    },
+    triggerCharacters: ['.'],
+  });
+
+  editorApi = {
     getContents() {
       return editor.getValue();
     },
@@ -68,5 +106,10 @@ export function newEditor(elem, onEdit) {
     setLanguage(lang) {
       monaco.editor.setModelLanguage(editor.getModel(), lang);
     },
+    dispose() {
+      completionDisposable.dispose();
+      editor.dispose();
+    },
   };
+  return editorApi;
 }

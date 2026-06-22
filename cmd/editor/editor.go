@@ -27,6 +27,7 @@ func (e editorJSFunc) New(elem *dom.Element) ide.Editor {
 		titleChan: make(chan string, 1),
 	}
 	editor.elem = js.Value(e).Invoke(elem.JSValue(), js.FuncOf(editor.onEdit))
+	editor.elem.Set("getCompletions", js.FuncOf(editor.getCompletions))
 	return editor
 }
 
