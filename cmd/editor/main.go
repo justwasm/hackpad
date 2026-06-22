@@ -3,8 +3,10 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"os"
+	"path/filepath"
 	"syscall/js"
 
 	"github.com/hack-pad/hackpad/cmd/editor/dom"
@@ -16,9 +18,28 @@ import (
 	"github.com/hack-pad/hackpad/internal/log"
 )
 
+//go:embed example/*.txt
+var exampleFS embed.FS
+
 const (
 	goBinaryPath = "/usr/local/go/bin/go"
 )
+
+func writeExampleFile(fs embed.FS, src, dst string) error {
+	if _, err := os.Stat(dst); err == nil {
+		return nil // already exists
+	}
+	data, err := fs.ReadFile(src)
+	if err != nil {
+		log.Error("Failed to read embedded "+filepath.Base(src)+": ", err)
+		return err
+	}
+	if err := os.WriteFile(dst, data, 0600); err != nil {
+		log.Error("Failed to write "+dst+": ", err)
+		return err
+	}
+	return nil
+}
 
 func main() {
 	editorID := flag.String("editor", "", "Editor element ID to attach")
@@ -61,38 +82,17 @@ func main() {
 		return
 	}
 
-	_, err := os.Stat("go.mod")
-	makeNewModule := os.IsNotExist(err)
-	if makeNewModule {
+	if err := writeExampleFile(exampleFS, "example/main.go.txt", "main.go"); err != nil {
+		return
+	}
+
+	if _, err := os.Stat("go.mod"); os.IsNotExist(err) {
 		_, err := tasks.Start(goBinaryPath, "go", "mod", "init", "playground")
 		if err != nil {
 			log.Error("Failed to start module init: ", err)
 			return
 		}
-	}
-
-	if _, err := os.Stat("main.go"); os.IsNotExist(err) {
-		mainGoContents := `package main
-
-import (
-	"fmt"
-
-	"github.com/johnstarich/go/datasize"
-)
-
-func main() {
-	fmt.Println("Hello from Wasm!", datasize.Gigabytes(4))
-}
-`
-		err := os.WriteFile("main.go", []byte(mainGoContents), 0600)
-		if err != nil {
-			log.Error("Failed to write to main.go: ", err)
-			return
-		}
-	}
-
-	if makeNewModule {
-		_, err := tasks.Start(goBinaryPath, "go", "mod", "tidy")
+		_, err = tasks.Start(goBinaryPath, "go", "mod", "tidy")
 		if err != nil {
 			log.Error("Failed to start go mod tidy: ", err)
 			return
@@ -101,8 +101,7 @@ func main() {
 
 	win.NewConsole()
 	editor := win.NewEditor()
-	err = editor.OpenFile("main.go")
-	if err != nil {
+	if err := editor.OpenFile("main.go"); err != nil {
 		log.Error("Failed to open main.go in editor: ", err)
 	}
 

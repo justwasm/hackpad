@@ -1,0 +1,19 @@
+package main
+
+import (
+	"fmt"
+	"time"
+
+	guid "github.com/google/uuid"
+)
+
+func main() {
+	id := guid.New()
+	fmt.Println("UUID:", id)
+
+	parsed := guid.MustParse(id.String())
+	sec, nsec := parsed.Time().UnixTime()
+	ts := time.Unix(sec, nsec)
+	fmt.Println("Sec, nsec:", sec, nsec)
+	fmt.Println("Timestamp:", ts)
+}
