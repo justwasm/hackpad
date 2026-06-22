@@ -42,11 +42,15 @@ export function newTerminal(elem) {
       background: light,
       foreground: dark,
       cursor: dark,
+      selectionBackground: 'rgba(0, 0, 0, 0.2)',
+      selectionInactiveBackground: 'rgba(0, 0, 0, 0.1)',
     } },
     dark: () => { term.options.theme = {
       background: dark,
       foreground: light,
       cursor: light,
+      selectionBackground: 'rgba(255, 255, 255, 0.25)',
+      selectionInactiveBackground: 'rgba(255, 255, 255, 0.12)',
     } },
   })
 
