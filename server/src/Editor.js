@@ -1,16 +1,20 @@
 import * as monaco from 'monaco-editor';
 import { listenColorScheme } from './ColorScheme';
+import { registerGoLanguage } from './GoMonarch';
 import './Editor.css';
 
-const MONACO_CDN = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs';
+registerGoLanguage(monaco);
+
+const WORKER_BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/esm/vs';
 
 window.MonacoEnvironment = {
   getWorker(_, label) {
-    if (label === 'json') return new Worker(`${MONACO_CDN}/language/json/json.worker.js`);
-    if (label === 'css' || label === 'scss' || label === 'less') return new Worker(`${MONACO_CDN}/language/css/css.worker.js`);
-    if (label === 'html' || label === 'handlebars' || label === 'razor') return new Worker(`${MONACO_CDN}/language/html/html.worker.js`);
-    if (label === 'typescript' || label === 'javascript') return new Worker(`${MONACO_CDN}/language/typescript/ts.worker.js`);
-    return new Worker(`${MONACO_CDN}/editor/editor.worker.js`);
+    const opts = { type: 'module' };
+    if (label === 'json') return new Worker(`${WORKER_BASE}/language/json/json.worker.js`, opts);
+    if (label === 'css' || label === 'scss' || label === 'less') return new Worker(`${WORKER_BASE}/language/css/css.worker.js`, opts);
+    if (label === 'html' || label === 'handlebars' || label === 'razor') return new Worker(`${WORKER_BASE}/language/html/html.worker.js`, opts);
+    if (label === 'typescript' || label === 'javascript') return new Worker(`${WORKER_BASE}/language/typescript/ts.worker.js`, opts);
+    return new Worker(`${WORKER_BASE}/editor/editor.worker.js`, opts);
   }
 };
 
@@ -60,6 +64,9 @@ export function newEditor(elem, onEdit) {
     },
     setCursorIndex(index) {
       editor.setPosition({ lineNumber: 1, column: index });
+    },
+    setLanguage(lang) {
+      monaco.editor.setModelLanguage(editor.getModel(), lang);
     },
   };
 }
