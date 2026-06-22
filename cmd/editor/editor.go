@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"syscall/js"
+	"time"
 
 	"github.com/hack-pad/hackpad/cmd/editor/dom"
 	"github.com/hack-pad/hackpad/cmd/editor/ide"
@@ -34,6 +35,7 @@ type jsEditor struct {
 	elem      js.Value
 	filePath  string
 	titleChan chan string
+	stopPoll  chan struct{}
 }
 
 func (j *jsEditor) onEdit(js.Value, []js.Value) interface{} {
@@ -56,6 +58,7 @@ func (j *jsEditor) OpenFile(path string) error {
 	j.filePath = path
 	j.titleChan <- path
 	j.setLanguage(path)
+	j.startFileWatcher()
 	return j.ReloadFile()
 }
 
@@ -70,6 +73,49 @@ func (j *jsEditor) ReloadFile() error {
 	}
 	j.elem.Call("setContents", string(contents))
 	return nil
+}
+
+func (j *jsEditor) Close() error {
+	if j.stopPoll != nil {
+		close(j.stopPoll)
+		j.stopPoll = nil
+	}
+	return nil
+}
+
+func (j *jsEditor) startFileWatcher() {
+	j.Close() // stop any previous watcher
+	j.stopPoll = make(chan struct{})
+	go j.pollFile(j.stopPoll)
+}
+
+func (j *jsEditor) pollFile(stop chan struct{}) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	var prevMtime time.Time
+	if info, err := os.Stat(j.filePath); err == nil {
+		prevMtime = info.ModTime()
+	}
+
+	for {
+		select {
+		case <-stop:
+			return
+		case <-ticker.C:
+			info, err := os.Stat(j.filePath)
+			if err != nil {
+				continue
+			}
+			mt := info.ModTime()
+			if !mt.Equal(prevMtime) {
+				prevMtime = mt
+				if err := j.ReloadFile(); err != nil {
+					log.Errorf("Failed to reload %s: %s", j.filePath, err.Error())
+				}
+			}
+		}
+	}
 }
 
 func (j *jsEditor) GetCursor() int {

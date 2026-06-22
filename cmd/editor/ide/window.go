@@ -261,6 +261,7 @@ func (w *window) makeDefaultEditor(id int, title, contents *dom.Element) Tabber 
 }
 
 func (w *window) closedEditor(closedIndex int) {
+	w.editors[closedIndex].Close()
 	var newEditors []Editor
 	newEditors = append(newEditors, w.editors[:closedIndex]...)
 	newEditors = append(newEditors, w.editors[closedIndex+1:]...)
