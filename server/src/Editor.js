@@ -1,48 +1,65 @@
-import CodeMirror from 'codemirror/lib/codemirror';
-import 'codemirror/lib/codemirror.css';
-import 'codemirror/theme/material-darker.css';
-import 'codemirror/mode/go/go';
-
+import * as monaco from 'monaco-editor';
 import { listenColorScheme } from './ColorScheme';
 import './Editor.css';
 
-export function newEditor(elem, onEdit) {
-  const editor = CodeMirror(elem, {
-    mode: "go",
-    theme: "default",
-    lineNumbers: true,
-    indentUnit: 4,
-    indentWithTabs: true,
-    viewportMargin: Infinity,
-  })
-  listenColorScheme({
-    light: () => editor.setOption("theme", "default"),
-    dark: () => editor.setOption("theme", "material-darker"),
-  })
-  editor.on('change', onEdit)
+const MONACO_CDN = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs';
 
-  elem.addEventListener('click', e => {
-    editor.focus()
-    if (e.target === elem) {
-      // If we've clicked outside the code editor area, then it must be the bottom empty space.
-      editor.setCursor({ line: editor.lineCount()-1 })
+window.MonacoEnvironment = {
+  getWorker(_, label) {
+    if (label === 'json') return new Worker(`${MONACO_CDN}/language/json/json.worker.js`);
+    if (label === 'css' || label === 'scss' || label === 'less') return new Worker(`${MONACO_CDN}/language/css/css.worker.js`);
+    if (label === 'html' || label === 'handlebars' || label === 'razor') return new Worker(`${MONACO_CDN}/language/html/html.worker.js`);
+    if (label === 'typescript' || label === 'javascript') return new Worker(`${MONACO_CDN}/language/typescript/ts.worker.js`);
+    return new Worker(`${MONACO_CDN}/editor/editor.worker.js`);
+  }
+};
+
+const THEME_LIGHT = 'vs';
+const THEME_DARK = 'vs-dark';
+
+export function newEditor(elem, onEdit) {
+  const editor = monaco.editor.create(elem, {
+    language: 'plaintext',
+    theme: THEME_DARK,
+    automaticLayout: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    fontSize: 14,
+    tabSize: 4,
+    insertSpaces: false,
+    wordWrap: 'off',
+    lineNumbersMinChars: 3,
+    glyphMargin: false,
+    folding: false,
+  });
+
+  let ignoreChange = false;
+  editor.onDidChangeModelContent(() => {
+    if (!ignoreChange) {
+      onEdit();
     }
-  })
+  });
+
+  listenColorScheme({
+    light: () => editor.updateOptions({ theme: THEME_LIGHT }),
+    dark: () => editor.updateOptions({ theme: THEME_DARK }),
+  });
+
   return {
     getContents() {
-      return editor.getValue()
+      return editor.getValue();
     },
-
     setContents(contents) {
-      editor.setValue(contents)
+      ignoreChange = true;
+      editor.setValue(contents);
+      ignoreChange = false;
     },
-
     getCursorIndex() {
-      return editor.getCursor().ch
+      const pos = editor.getPosition();
+      return pos ? pos.column : 0;
     },
-
     setCursorIndex(index) {
-      editor.setCursor({ ch: index })
+      editor.setPosition({ lineNumber: 1, column: index });
     },
-  }
+  };
 }
