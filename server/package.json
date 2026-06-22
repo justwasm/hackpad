@@ -22,9 +22,10 @@
     "whatwg-fetch": "^3.6.20"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "copy-monaco-workers": "bash bin/copy-monaco-workers.sh",
+    "start": "npm run copy-monaco-workers && react-scripts start",
     "start-go": "cd .. && nodemon --signal SIGINT -e go -d 2 -x 'make go-static || exit 1'",
-    "build": "react-scripts build",
+    "build": "npm run copy-monaco-workers && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

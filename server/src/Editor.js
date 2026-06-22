@@ -5,16 +5,15 @@ import './Editor.css';
 
 registerGoLanguage(monaco);
 
-const WORKER_BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/esm/vs';
+const WORKER_BASE = `${process.env.PUBLIC_URL}/vs/assets`;
 
 window.MonacoEnvironment = {
   getWorker(_, label) {
-    const opts = { type: 'module' };
-    if (label === 'json') return new Worker(`${WORKER_BASE}/language/json/json.worker.js`, opts);
-    if (label === 'css' || label === 'scss' || label === 'less') return new Worker(`${WORKER_BASE}/language/css/css.worker.js`, opts);
-    if (label === 'html' || label === 'handlebars' || label === 'razor') return new Worker(`${WORKER_BASE}/language/html/html.worker.js`, opts);
-    if (label === 'typescript' || label === 'javascript') return new Worker(`${WORKER_BASE}/language/typescript/ts.worker.js`, opts);
-    return new Worker(`${WORKER_BASE}/editor/editor.worker.js`, opts);
+    if (label === 'json') return new Worker(`${WORKER_BASE}/json.worker.js`);
+    if (label === 'css' || label === 'scss' || label === 'less') return new Worker(`${WORKER_BASE}/css.worker.js`);
+    if (label === 'html' || label === 'handlebars' || label === 'razor') return new Worker(`${WORKER_BASE}/html.worker.js`);
+    if (label === 'typescript' || label === 'javascript') return new Worker(`${WORKER_BASE}/ts.worker.js`);
+    return new Worker(`${WORKER_BASE}/editor.worker.js`);
   }
 };
 
