@@ -100,16 +100,16 @@ server/public/wasm/wasm_exec.js: go
 
 .PHONY: node-static
 node-static:
-	npm --prefix=server install
-	NODE_OPTIONS=--openssl-legacy-provider npm --prefix=server run build
+	@echo "No build step needed - frontend is buildless"
 
 .PHONY: watch
 watch:
-	@if [[ ! -d server/node_modules ]]; then \
-		npm --prefix=server install; \
-	fi
-	npm --prefix=server run start-go & \
-	npm --prefix=server start
+	npx serve server/public -p 3000
+
+.PHONY: watch-go
+watch-go:
+	nodemon --signal SIGINT -e go -d 2 -x 'make go-static || exit 1' & \
+	npx serve server/public -p 3000
 
 .PHONY: build
 build: build-docker

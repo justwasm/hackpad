@@ -1,0 +1,65 @@
+.app-loading {
+    --app-loading-size: 6rem;
+
+    z-index: 1000;
+    position: absolute;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    .app-loading {
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+}
+
+.app-loading .app-loading-center {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.app-loading .app-loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem;
+}
+
+.app-loading-logo {
+    height: 12rem;
+    width: 12rem;
+}
+
+.app-loading p {
+    text-align: center;
+    margin: 0.25rem;
+    padding: 0;
+}
+
+.app-loading-bar {
+    width: 200px;
+    height: 6px;
+    background: rgba(128, 128, 128, 0.2);
+    border-radius: 3px;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+.app-loading-bar-fill {
+    height: 100%;
+    background: var(--app-title-highlight);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.app-loading-bar-text {
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+    color: var(--app-title-highlight);
+}
