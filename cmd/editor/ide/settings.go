@@ -6,12 +6,14 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 	"syscall/js"
 
 	"github.com/hack-pad/hackpad/cmd/editor/css"
 	"github.com/hack-pad/hackpad/cmd/editor/dom"
 	"github.com/hack-pad/hackpad/internal/global"
 	"github.com/hack-pad/hackpad/internal/interop"
+	"github.com/hack-pad/hackpad/internal/log"
 	"github.com/hack-pad/hackpad/internal/promise"
 )
 
@@ -79,6 +81,46 @@ func newSettingsDropdown(attachTo *dom.Element) *dropdown {
 		if err == nil {
 			destroyMount(cache)
 		}
+	})
+	listenButton("mount local dir", "", func() {
+		// Show directory picker with read-write access
+		pickerPromise := js.Global().Call("showDirectoryPicker", map[string]any{"mode": "readwrite"})
+		result, err := promise.From(pickerPromise).Await()
+		if err != nil {
+			log.Errorf("Failed to pick directory: %v", err)
+			return
+		}
+		handle := result.(js.Value)
+		dirName := handle.Get("name").String()
+		mountPath := "/home/me/" + dirName
+
+		// Check if this exact path is already mounted
+		existingMounts := interop.StringsFromJSValue(global.Get("getMounts").Invoke())
+		for _, m := range existingMounts {
+			if m == mountPath || m == strings.TrimPrefix(mountPath, "/") {
+				dom.Alert("Directory \"" + dirName + "\" is already mounted at " + mountPath + ".")
+				return
+			}
+		}
+
+		// Create mount directory
+		if err := os.MkdirAll(mountPath, 0755); err != nil {
+			log.Errorf("Failed to create mount directory %q: %v", mountPath, err)
+			return
+		}
+
+		// Mount the directory with read-write access
+		overlayFn := js.Global().Get("hackpad").Get("overlayLocalDir")
+		if overlayFn.IsUndefined() {
+			log.Errorf("overlayLocalDir not found on window.hackpad")
+			return
+		}
+		_, err = promise.From(overlayFn.Invoke(mountPath, handle, "readwrite")).Await()
+		if err != nil {
+			log.Errorf("Failed to mount directory %q at %q: %v", dirName, mountPath, err)
+			return
+		}
+		log.Debugf("Mounted local dir %q at %q", dirName, mountPath)
 	})
 	listenButton("reload programs", "Reinstall programs and reload?", func() {
 		_, _ = destroyMount("/bin").Await()

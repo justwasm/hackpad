@@ -21,6 +21,7 @@ import (
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/interop"
 	"github.com/hack-pad/hackpad/internal/log"
+	"github.com/hack-pad/hackpadfs/localdir"
 	"github.com/hack-pad/hackpadfs/opfs"
 	"github.com/hack-pad/hackpad/internal/process"
 	"github.com/hack-pad/hackpad/internal/promise"
@@ -151,6 +152,43 @@ func OverlayTarGzip(args []js.Value) error {
 		}
 	}
 	return fs.OverlayTarGzip(mountPath, reader, persist, shouldCache)
+}
+
+func overlayLocalDir(this js.Value, args []js.Value) interface{} {
+	resolve, reject, prom := promise.New()
+	go func() {
+		err := OverlayLocalDir(args)
+		if err != nil {
+			reject(interop.WrapAsJSError(err, "Failed overlaying local dir FS"))
+		} else {
+			log.Debug("Successfully overlayed local dir FS")
+			resolve(nil)
+		}
+	}()
+	return prom.JSValue()
+}
+
+func OverlayLocalDir(args []js.Value) error {
+	if len(args) < 2 {
+		return errors.New("overlayLocalDir: mount path and directory handle are required")
+	}
+	mountPath := args[0].String()
+	dirHandle := args[1]
+
+	if dirHandle.Type() != js.TypeObject || dirHandle.Get("kind").String() != "directory" {
+		return errors.New("overlayLocalDir: second argument must be a FileSystemDirectoryHandle")
+	}
+
+	mode := "read"
+	if len(args) >= 3 && args[2].Type() == js.TypeString {
+		mode = args[2].String()
+	}
+
+	localFS, err := localdir.NewFS(dirHandle, mode)
+	if err != nil {
+		return err
+	}
+	return fs.Overlay(mountPath, localFS)
 }
 
 func wrapProgress(r io.ReadCloser, contentLength int64, setProgress func(float64)) io.ReadCloser {
