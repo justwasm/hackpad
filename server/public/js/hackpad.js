@@ -102,18 +102,50 @@ export function observeGoDownloadProgress(callback) {
   callback(overlayProgress)
 }
 
-function promisify(fn) {
-  return (...args) => {
-    return new Promise((resolve, reject) => {
-      const newArgs = [...args]
-      newArgs.push((err, ...results) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(results)
-        }
-      })
-      fn(...newArgs)
+const promisify = (fn) => (...args) => {
+  return new Promise((resolve, reject) => {
+    const newArgs = [...args]
+    newArgs.push((err, ...results) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(results)
+      }
     })
+    fn(...newArgs)
+  })
+}
+
+/**
+ * Mount a local directory via the File System Access API.
+ * Shows a directory picker, then mounts the selected directory at the given path.
+ *
+ * @param {string} mountPath - Virtual filesystem path to mount at (e.g., "/home/me/project")
+ * @param {Object} [options] - Options
+ * @param {boolean} [options.writable=false] - Request write access (default: read-only)
+ * @param {string} [options.id] - Unique ID to persist directory access across sessions
+ * @param {string} [options.startIn] - Suggested starting directory for the picker
+ * @returns {Promise<{name: string}>} Resolves with the picked directory name
+ */
+export async function mountLocalDir(mountPath, options = {}) {
+  await initOnce
+  const pickerOpts = { mode: options.writable ? 'readwrite' : 'read' }
+  if (options.id) pickerOpts.id = options.id
+  if (options.startIn) pickerOpts.startIn = options.startIn
+
+  const handle = await window.showDirectoryPicker(pickerOpts)
+  const mode = options.writable ? 'readwrite' : 'read'
+
+  // Ensure the mount directory exists
+  try {
+    await mkdirAll(mountPath)
+  } catch (e) {
+    // Might already exist, that's ok
   }
+
+  // Pass the handle to Go WASM to mount
+  await promisify(window.hackpad.overlayLocalDir)(mountPath, handle, mode)
+
+  console.debug(`Mounted local directory "${handle.name}" at ${mountPath} (mode: ${mode})`)
+  return { name: handle.name }
 }
