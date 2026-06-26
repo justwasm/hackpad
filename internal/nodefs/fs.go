@@ -131,6 +131,21 @@ func (f *FS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpadfs
 	}
 
 	if !isNew {
+		// Stat first to check if this is a directory
+		finfo, err := f.Stat(name)
+		if err != nil {
+			return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
+		}
+		if finfo.IsDir() {
+			return &nodefsFile{
+				fs:       f,
+				name:     name,
+				resolved: resolved,
+				info:     finfo,
+				ro:       flag&writeFlags == 0,
+			}, nil
+		}
+
 		// Read entire file into memory
 		result := bridge.Call("readFileSync", resolved)
 		if err := bridgeErr(result); err != nil {
