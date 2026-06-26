@@ -22,6 +22,7 @@ import (
 	"github.com/hack-pad/hackpad/internal/interop"
 	"github.com/hack-pad/hackpad/internal/log"
 	"github.com/hack-pad/hackpadfs/localdir"
+	"github.com/hack-pad/hackpadfs/mem"
 	"github.com/hack-pad/hackpadfs/opfs"
 	"github.com/hack-pad/hackpad/internal/process"
 	"github.com/hack-pad/hackpad/internal/promise"
@@ -227,4 +228,30 @@ func newReadCloseWrapper(r io.Reader, closer io.Closer) (context.Context, io.Rea
 func (r *readCloseWrapper) Close() error {
 	r.cancel()
 	return r.closer.Close()
+}
+
+func overlayMemFS(this js.Value, args []js.Value) interface{} {
+	resolve, reject, prom := promise.New()
+	go func() {
+		err := OverlayMemFS(args)
+		if err != nil {
+			reject(interop.WrapAsJSError(err, "Failed overlaying mem FS"))
+		} else {
+			log.Debug("Successfully overlayed mem FS")
+			resolve(nil)
+		}
+	}()
+	return prom.JSValue()
+}
+
+func OverlayMemFS(args []js.Value) error {
+	if len(args) == 0 {
+		return errors.New("overlayMemFS: mount path is required")
+	}
+	mountPath := args[0].String()
+	memFS, err := mem.NewFS()
+	if err != nil {
+		return err
+	}
+	return fs.Overlay(mountPath, memFS)
 }

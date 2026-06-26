@@ -86,6 +86,8 @@ func Init() {
 	global.Set("overlayIndexedDB", js.FuncOf(overlayIndexedDB))
 	global.Set("overlayOPFS", js.FuncOf(overlayOPFS))
 	global.Set("overlayLocalDir", js.FuncOf(overlayLocalDir))
+	global.Set("overlayMemFS", js.FuncOf(overlayMemFS))
+	global.Set("overlayNodefs", js.FuncOf(overlayNodefs))
 	global.Set("dumpZip", js.FuncOf(dumpZip))
 
 	// Set up system directories
