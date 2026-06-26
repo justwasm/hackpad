@@ -13,7 +13,7 @@
 // Run:
 //   node examples/node/run.mjs
 
-import { readFileSync, writeFileSync, mkdirSync, statSync, readdirSync,
+import { readFileSync, writeFileSync, mkdirSync, statSync, lstatSync, readdirSync,
          unlinkSync, rmdirSync, rmSync, renameSync, chmodSync, utimesSync,
          readlinkSync, accessSync, symlinkSync } from 'fs';
 import { createRequire } from 'module';
