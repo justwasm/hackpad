@@ -454,6 +454,25 @@ func bridgeErr(result js.Value) error {
 	if errVal.IsUndefined() || errVal.IsNull() || errVal.Type() == js.TypeNull {
 		return nil
 	}
+	if errVal.Type() == js.TypeObject {
+		code := errVal.Get("code")
+		if code.Type() == js.TypeString {
+			switch code.String() {
+			case "ENOENT":
+				return hackpadfs.ErrNotExist
+			case "EEXIST":
+				return hackpadfs.ErrExist
+			case "EISDIR":
+				return hackpadfs.ErrIsDir
+			case "EACCES", "EPERM":
+				return hackpadfs.ErrPermission
+			case "ENOTDIR":
+				return hackpadfs.ErrNotDir
+			case "ENOSYS":
+				return hackpadfs.ErrNotImplemented
+			}
+		}
+	}
 	return errors.New(errVal.String())
 }
 

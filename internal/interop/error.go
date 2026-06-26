@@ -67,6 +67,8 @@ func mapToErrNo(err error, debugMessage string) string {
 		return "EEXIST"
 	case errors.Is(err, hackpadfs.ErrIsDir):
 		return "EISDIR"
+	case errors.Is(err, hackpadfs.ErrNotDir):
+		return "ENOTDIR"
 	case errors.Is(err, hackpadfs.ErrPermission):
 		return "EPERM"
 	default:
