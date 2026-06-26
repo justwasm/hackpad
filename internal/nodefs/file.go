@@ -195,7 +195,10 @@ func (f *nodefsFile) flush() error {
 	if len(buf) > 0 {
 		js.CopyBytesToJS(jsBuf, buf)
 	}
-	result := bridge.Call("writeFileSync", resolved, jsBuf)
+	result, err := bridgeCall(bridge, "writeFileSync", resolved, jsBuf)
+	if err != nil {
+		return &hackpadfs.PathError{Op: "write", Path: f.name, Err: err}
+	}
 	return bridgePathErr("write", f.name, result)
 }
 

@@ -47,6 +47,7 @@ import (
 	"syscall/js"
 	"time"
 
+	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpadfs"
 )
 
@@ -147,7 +148,10 @@ func (f *FS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpadfs
 		}
 
 		// Read entire file into memory
-		result := bridge.Call("readFileSync", resolved)
+		result, err := bridgeCall(bridge, "readFileSync", resolved)
+		if err != nil {
+			return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
+		}
 		if err := bridgeErr(result); err != nil {
 			return nil, &hackpadfs.PathError{Op: "open", Path: name, Err: err}
 		}
@@ -206,10 +210,14 @@ func (f *FS) stat(name string, useLstat bool) (hackpadfs.FileInfo, error) {
 	bridge := f.bridge()
 
 	var result js.Value
+	var err error
 	if useLstat {
-		result = bridge.Call("lstatSync", resolved)
+		result, err = bridgeCall(bridge, "lstatSync", resolved)
 	} else {
-		result = bridge.Call("statSync", resolved)
+		result, err = bridgeCall(bridge, "statSync", resolved)
+	}
+	if err != nil {
+		return nil, &hackpadfs.PathError{Op: "stat", Path: name, Err: err}
 	}
 	if err := bridgeErr(result); err != nil {
 		return nil, &hackpadfs.PathError{Op: "stat", Path: name, Err: err}
@@ -232,7 +240,10 @@ func (f *FS) Mkdir(name string, perm hackpadfs.FileMode) error {
 	}
 	resolved := f.resolve(name)
 	bridge := f.bridge()
-	result := bridge.Call("mkdirSync", resolved, int(perm))
+	result, err := bridgeCall(bridge, "mkdirSync", resolved, int(perm))
+	if err != nil {
+		return &hackpadfs.PathError{Op: "mkdir", Path: name, Err: err}
+	}
 	return bridgePathErr("mkdir", name, result)
 }
 
@@ -243,7 +254,10 @@ func (f *FS) MkdirAll(path_ string, perm hackpadfs.FileMode) error {
 	}
 	resolved := f.resolve(path_)
 	bridge := f.bridge()
-	result := bridge.Call("mkdirAllSync", resolved, int(perm))
+	result, err := bridgeCall(bridge, "mkdirAllSync", resolved, int(perm))
+	if err != nil {
+		return &hackpadfs.PathError{Op: "mkdir", Path: path_, Err: err}
+	}
 	return bridgePathErr("mkdir", path_, result)
 }
 
@@ -256,11 +270,14 @@ func (f *FS) Remove(name string) error {
 	bridge := f.bridge()
 
 	// Try unlink first, then rmdir
-	result := bridge.Call("unlinkSync", resolved)
-	if bridgeErr(result) == nil {
+	result, err := bridgeCall(bridge, "unlinkSync", resolved)
+	if err == nil && bridgeErr(result) == nil {
 		return nil
 	}
-	result = bridge.Call("rmdirSync", resolved)
+	result, err = bridgeCall(bridge, "rmdirSync", resolved)
+	if err != nil {
+		return &hackpadfs.PathError{Op: "remove", Path: name, Err: err}
+	}
 	return bridgePathErr("remove", name, result)
 }
 
@@ -271,7 +288,10 @@ func (f *FS) RemoveAll(name string) error {
 	}
 	resolved := f.resolve(name)
 	bridge := f.bridge()
-	result := bridge.Call("rmSync", resolved, true)
+	result, err := bridgeCall(bridge, "rmSync", resolved, true)
+	if err != nil {
+		return &hackpadfs.PathError{Op: "removeall", Path: name, Err: err}
+	}
 	return bridgePathErr("removeall", name, result)
 }
 
@@ -283,7 +303,10 @@ func (f *FS) Rename(oldName, newName string) error {
 	oldResolved := f.resolve(oldName)
 	newResolved := f.resolve(newName)
 	bridge := f.bridge()
-	result := bridge.Call("renameSync", oldResolved, newResolved)
+	result, err := bridgeCall(bridge, "renameSync", oldResolved, newResolved)
+	if err != nil {
+		return &hackpadfs.PathError{Op: "rename", Path: oldName, Err: err}
+	}
 	return bridgePathErr("rename", oldName, result)
 }
 
@@ -294,7 +317,10 @@ func (f *FS) Chmod(name string, mode hackpadfs.FileMode) error {
 	}
 	resolved := f.resolve(name)
 	bridge := f.bridge()
-	result := bridge.Call("chmodSync", resolved, int(mode))
+	result, err := bridgeCall(bridge, "chmodSync", resolved, int(mode))
+	if err != nil {
+		return &hackpadfs.PathError{Op: "chmod", Path: name, Err: err}
+	}
 	return bridgePathErr("chmod", name, result)
 }
 
@@ -305,7 +331,10 @@ func (f *FS) Chtimes(name string, atime, mtime time.Time) error {
 	}
 	resolved := f.resolve(name)
 	bridge := f.bridge()
-	result := bridge.Call("utimesSync", resolved, atime.UnixMilli(), mtime.UnixMilli())
+	result, err := bridgeCall(bridge, "utimesSync", resolved, atime.UnixMilli(), mtime.UnixMilli())
+	if err != nil {
+		return &hackpadfs.PathError{Op: "chtimes", Path: name, Err: err}
+	}
 	return bridgePathErr("chtimes", name, result)
 }
 
@@ -313,7 +342,10 @@ func (f *FS) Chtimes(name string, atime, mtime time.Time) error {
 func (f *FS) ReadDir(name string) ([]hackpadfs.DirEntry, error) {
 	resolved := f.resolve(name)
 	bridge := f.bridge()
-	result := bridge.Call("readdirSync", resolved)
+	result, err := bridgeCall(bridge, "readdirSync", resolved)
+	if err != nil {
+		return nil, &hackpadfs.PathError{Op: "readdir", Path: name, Err: err}
+	}
 	if err := bridgeErr(result); err != nil {
 		return nil, &hackpadfs.PathError{Op: "readdir", Path: name, Err: err}
 	}
@@ -341,7 +373,10 @@ func (f *FS) Symlink(target, name string) error {
 	}
 	resolved := f.resolve(name)
 	bridge := f.bridge()
-	result := bridge.Call("symlinkSync", target, resolved)
+	result, err := bridgeCall(bridge, "symlinkSync", target, resolved)
+	if err != nil {
+		return &hackpadfs.PathError{Op: "symlink", Path: name, Err: err}
+	}
 	return bridgePathErr("symlink", name, result)
 }
 
@@ -349,7 +384,10 @@ func (f *FS) Symlink(target, name string) error {
 func (f *FS) Readlink(name string) (string, error) {
 	resolved := f.resolve(name)
 	bridge := f.bridge()
-	result := bridge.Call("readlinkSync", resolved)
+	result, err := bridgeCall(bridge, "readlinkSync", resolved)
+	if err != nil {
+		return "", &hackpadfs.PathError{Op: "readlink", Path: name, Err: err}
+	}
 	if err := bridgeErr(result); err != nil {
 		return "", &hackpadfs.PathError{Op: "readlink", Path: name, Err: err}
 	}
@@ -358,8 +396,17 @@ func (f *FS) Readlink(name string) (string, error) {
 
 // --- helpers ---
 
+func bridgeCall(bridge js.Value, fn string, args ...interface{}) (result js.Value, err error) {
+	defer common.CatchException(&err)
+	result = bridge.Call(fn, args...)
+	return result, nil
+}
+
 func callBridge(bridge js.Value, fn string, args ...interface{}) error {
-	result := bridge.Call(fn, args...)
+	result, err := bridgeCall(bridge, fn, args...)
+	if err != nil {
+		return err
+	}
 	return bridgeErr(result)
 }
 
