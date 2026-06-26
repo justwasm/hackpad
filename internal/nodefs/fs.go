@@ -47,7 +47,6 @@ import (
 	"syscall/js"
 	"time"
 
-	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpadfs"
 )
 
@@ -397,9 +396,49 @@ func (f *FS) Readlink(name string) (string, error) {
 // --- helpers ---
 
 func bridgeCall(bridge js.Value, fn string, args ...interface{}) (result js.Value, err error) {
-	defer common.CatchException(&err)
+	defer func() {
+		if r := recover(); r != nil {
+			switch v := r.(type) {
+			case js.Error:
+				err = mapJSError(v.Value)
+			case js.Value:
+				err = mapJSError(v)
+			default:
+				panic(r)
+			}
+		}
+	}()
 	result = bridge.Call(fn, args...)
 	return result, nil
+}
+
+func mapJSError(jsErr js.Value) (err error) {
+	defer func() {
+		if recover() != nil {
+			err = hackpadfs.ErrInvalid
+		}
+	}()
+	msg := js.Global().Get("String").Invoke(jsErr.Get("message"))
+	code := jsErr.Get("code")
+	if code.IsUndefined() || code.Type() != js.TypeString {
+		return errors.New(msg.String())
+	}
+	switch code.String() {
+	case "ENOENT":
+		return hackpadfs.ErrNotExist
+	case "EEXIST":
+		return hackpadfs.ErrExist
+	case "EISDIR":
+		return hackpadfs.ErrIsDir
+	case "EACCES", "EPERM":
+		return hackpadfs.ErrPermission
+	case "ENOTDIR":
+		return hackpadfs.ErrNotDir
+	case "ENOSYS":
+		return hackpadfs.ErrNotImplemented
+	default:
+		return errors.New(msg.String())
+	}
 }
 
 func callBridge(bridge js.Value, fn string, args ...interface{}) error {
