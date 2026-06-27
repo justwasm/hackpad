@@ -172,10 +172,15 @@ func (f *nodefsFile) Close() error {
 	dirty := f.dirty
 	f.mu.Unlock()
 
+	var err error
 	if dirty {
-		return f.flush()
+		err = f.flush()
 	}
-	return nil
+	// Release buffer for large files; buf is no longer needed after close.
+	f.mu.Lock()
+	f.buf = nil
+	f.mu.Unlock()
+	return err
 }
 
 func (f *nodefsFile) flush() error {

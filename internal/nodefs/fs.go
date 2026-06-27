@@ -55,8 +55,7 @@ type FS struct {
 	root string
 	mode string // "read" or "readwrite"
 
-	mu     sync.Mutex
-	openWriters map[string]bool // tracks files with pending writes
+	mu sync.Mutex
 }
 
 // NewFS creates a new nodefs FS rooted at the given local path.
@@ -71,9 +70,8 @@ func NewFS(root string, mode string) (*FS, error) {
 		return nil, errors.New("nodefs: globalThis.__nodefs is not defined — inject the Node.js fs bridge before loading WASM")
 	}
 	return &FS{
-		root:        root,
-		mode:        mode,
-		openWriters: make(map[string]bool),
+		root: root,
+		mode: mode,
 	}, nil
 }
 
