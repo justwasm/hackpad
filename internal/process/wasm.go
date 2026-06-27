@@ -60,8 +60,8 @@ func (p *process) startWasmPromise(path string, exitChan chan<- int) (promise.Pr
 			goInstance.Set("_ids", js.Null())
 			goInstance.Set("_goRefCounts", js.Null())
 			goInstance.Set("_idPool", js.Null())
-			goInstance.Set("_scheduledTimeouts", js.Null())
 			goInstance.Set("_pendingEvent", js.Null())
+			goInstance.Set("_exitPromise", js.Null())
 			goInstance.Set("_exitPromise", js.Null())
 		}()
 		if len(args) == 0 {
