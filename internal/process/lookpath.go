@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type stater func(string) (os.FileInfo, error)
+type stater func(string) (os.FileInfo, []byte, error)
 
 func lookPath(stat stater, pathVar string, file string) (string, error) {
 	if strings.Contains(file, "/") {
@@ -30,12 +30,15 @@ func lookPath(stat stater, pathVar string, file string) (string, error) {
 }
 
 func findExecutable(stat stater, file string) error {
-	d, err := stat(file)
+	d, magic, err := stat(file)
 	if err != nil {
 		return err
 	}
-	if m := d.Mode(); !m.IsDir() && m&0111 != 0 {
-		return nil
+	if d.Mode().IsDir() {
+		return os.ErrPermission
 	}
-	return os.ErrPermission
+	if string(magic) != "\x00asm" {
+		return os.ErrPermission
+	}
+	return nil
 }

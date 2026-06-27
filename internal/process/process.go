@@ -13,7 +13,6 @@ import (
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/log"
 	"github.com/hack-pad/hackpadfs/keyvalue/blob"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -127,23 +126,26 @@ func (p *process) start() error {
 
 func (p *process) prepExecutable() (command string, err error) {
 	fs := p.Files()
-	command, err = lookPath(fs.Stat, os.Getenv("PATH"), p.command)
+	stat := func(path string) (os.FileInfo, []byte, error) {
+		info, err := fs.Stat(path)
+		if err != nil {
+			return nil, nil, err
+		}
+		fid, err := fs.Open(path, 0, 0)
+		if err != nil {
+			return nil, nil, err
+		}
+		defer fs.Close(fid)
+		buf := blob.NewBytesLength(4)
+		_, err = fs.Read(fid, buf, 0, buf.Len(), nil)
+		if err != nil {
+			return nil, nil, err
+		}
+		return info, buf.Bytes(), nil
+	}
+	command, err = lookPath(stat, os.Getenv("PATH"), p.command)
 	if err != nil {
 		return "", err
-	}
-	fid, err := fs.Open(command, 0, 0)
-	if err != nil {
-		return "", err
-	}
-	defer fs.Close(fid)
-	buf := blob.NewBytesLength(4)
-	_, err = fs.Read(fid, buf, 0, buf.Len(), nil)
-	if err != nil {
-		return "", err
-	}
-	magicNumber := string(buf.Bytes())
-	if magicNumber != "\x00asm" {
-		return "", errors.Errorf("Format error. Expected Wasm file header but found: %q", magicNumber)
 	}
 	return command, nil
 }
