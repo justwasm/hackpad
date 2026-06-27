@@ -21,6 +21,7 @@ type bufferedLogger struct {
 	printFn   func(...interface{}) int
 	mu        sync.Mutex
 	buf       bytes.Buffer
+	closeCh   chan struct{}
 	timerOnce sync.Once
 }
 
@@ -56,17 +57,24 @@ func (b *bufferedLogger) Print(s string) int {
 
 func (b *bufferedLogger) Write(p []byte) (n int, err error) {
 	b.timerOnce.Do(func() {
+		b.closeCh = make(chan struct{})
 		const waitTime = time.Second / 2
 		go func() {
 			ticker := time.NewTicker(waitTime)
-			for range ticker.C {
-				b.flush()
+			for {
+				select {
+				case <-ticker.C:
+					b.flush()
+				case <-b.closeCh:
+					ticker.Stop()
+					return
+				}
 			}
 		}()
 	})
 
 	b.mu.Lock()
-	_, _ = b.buf.Write(p) // at time of writing, bytes.Buffer.Write cannot return an error
+	_, _ = b.buf.Write(p)
 	b.mu.Unlock()
 	return len(p), nil
 }
@@ -76,6 +84,12 @@ func (b *bufferedLogger) Name() string {
 }
 
 func (b *bufferedLogger) Close() error {
-	// TODO prevent writes and return os.ErrClosed
+	if b.closeCh != nil {
+		close(b.closeCh)
+	}
+	b.flush()
+	b.mu.Lock()
+	b.buf.Reset()
+	b.mu.Unlock()
 	return nil
 }
