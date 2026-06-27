@@ -46,7 +46,9 @@ func switchContext(pid common.PID) (prev common.PID) {
 	}
 	newProcess := pids[pid]
 	common.SetCurrentPID(pid)
-	switchedContextListener(pid, newProcess.parentPID)
+	if newProcess != nil {
+		switchedContextListener(pid, newProcess.parentPID)
+	}
 	return
 }
 
