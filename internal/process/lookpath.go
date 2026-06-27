@@ -1,6 +1,7 @@
 package process
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,7 +39,7 @@ func findExecutable(stat stater, file string) error {
 		return os.ErrPermission
 	}
 	if string(magic) != "\x00asm" {
-		return os.ErrPermission
+		return errors.New("not a Wasm binary")
 	}
 	return nil
 }

@@ -173,7 +173,7 @@ func (f *FS) OpenFile(name string, flag int, perm hackpadfs.FileMode) (hackpadfs
 		finfo = &nodefsFileInfo{
 			name:    name,
 			size:    0,
-			mode:    perm | hackpadfs.ModePerm,
+			mode:    perm & hackpadfs.ModePerm,
 			isDir:   false,
 			modTime: time.Now(),
 		}

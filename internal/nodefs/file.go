@@ -199,7 +199,15 @@ func (f *nodefsFile) flush() error {
 	if err != nil {
 		return &hackpadfs.PathError{Op: "write", Path: f.name, Err: err}
 	}
-	return bridgePathErr("write", f.name, result)
+	if err := bridgePathErr("write", f.name, result); err != nil {
+		return err
+	}
+	mode := int(f.info.Mode().Perm())
+	chmodResult, chmodErr := bridgeCall(bridge, "chmodSync", resolved, mode)
+	if chmodErr != nil {
+		return &hackpadfs.PathError{Op: "chmod", Path: f.name, Err: chmodErr}
+	}
+	return bridgePathErr("chmod", f.name, chmodResult)
 }
 
 func (f *nodefsFile) ReadDir(n int) ([]hackpadfs.DirEntry, error) {
