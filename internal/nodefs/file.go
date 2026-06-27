@@ -144,21 +144,42 @@ func (f *nodefsFile) Sync() error {
 func (f *nodefsFile) Stat() (hackpadfs.FileInfo, error) {
 	f.mu.Lock()
 	closed := f.closed
+	dirty := f.dirty
+	buf := f.buf
 	f.mu.Unlock()
+
 	if closed {
 		return nil, hackpadfs.ErrClosed
 	}
+
 	// Re-stat from actual fs for latest size
 	info, err := f.fs.Stat(f.name)
-	if err == nil {
+	if err != nil {
+		f.mu.Lock()
+		info = f.info
+		f.mu.Unlock()
+	}
+
+	if dirty && buf != nil {
+		// File has unflushed in-memory writes. Return the in-memory
+		// buffer size, not the stale disk size (which may be 0 for
+		// newly created files not yet flushed to disk).
+		f.mu.Lock()
+		info = &nodefsFileInfo{
+			name:    f.name,
+			size:    int64(len(buf)),
+			mode:    info.Mode(),
+			isDir:   false,
+			modTime: time.Now(),
+		}
+		f.mu.Unlock()
+	} else if err == nil {
+		// Cache the disk stat for future calls when clean.
 		f.mu.Lock()
 		f.info = info
 		f.mu.Unlock()
-		return info, nil
 	}
-	f.mu.Lock()
-	info = f.info
-	f.mu.Unlock()
+
 	return info, nil
 }
 
