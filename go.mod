@@ -2,7 +2,7 @@ module github.com/hack-pad/hackpad
 
 go 1.26.3
 
-replace github.com/hack-pad/hackpadfs => github.com/justwasm/hackpadfs v0.2.7
+replace github.com/hack-pad/hackpadfs => github.com/justwasm/hackpadfs v0.2.8
 
 replace github.com/atotto/clipboard => github.com/justwasm/clipboard v0.1.6
 
