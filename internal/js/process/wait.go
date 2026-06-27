@@ -6,6 +6,7 @@ import (
 	"syscall"
 	"syscall/js"
 
+	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/process"
 	"github.com/pkg/errors"
 )
@@ -47,5 +48,10 @@ func Wait(pid process.PID, wstatus *syscall.WaitStatus, options int, rusage *sys
 		status |= exitedMask                // exited
 		*wstatus = syscall.WaitStatus(status)
 	}
+
+	// Flush shared stdout/stderr so child's output is visible
+	// before the JS callback fires (no need for setTimeout workaround).
+	fs.FlushStdio()
+
 	return pid, err
 }

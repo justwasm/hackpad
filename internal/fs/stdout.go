@@ -46,7 +46,8 @@ func (b *bufferedLogger) flush() {
 	}
 	b.mu.Unlock()
 	if len(buf) != 0 {
-		b.printFn(string(buf))
+		// Trim trailing newline to avoid double-\n from console.log/error
+		b.printFn(string(bytes.TrimRight(buf, "\n")))
 	}
 }
 
@@ -81,6 +82,18 @@ func (b *bufferedLogger) Write(p []byte) (n int, err error) {
 
 func (b *bufferedLogger) Name() string {
 	return b.name
+}
+
+// FlushStdout flushes the stdout and stderr buffered loggers.
+// This is useful after a child process exits, to ensure all
+// inherited output has been flushed before returning to JS.
+func FlushStdio() {
+	if f, ok := stdout.(*bufferedLogger); ok {
+		f.flush()
+	}
+	if f, ok := stderr.(*bufferedLogger); ok {
+		f.flush()
+	}
 }
 
 func (b *bufferedLogger) Close() error {
