@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"syscall/js"
 	"time"
 
@@ -21,8 +22,12 @@ var jsWasm = js.Global().Get("WebAssembly")
 
 type wasmCacheFs struct {
 	rootFs
+	mu       sync.Mutex
 	memCache map[string]js.Value
+	order    []string // insertion order for LRU-ish eviction
 }
+
+const maxWasmModules = 32
 
 func init() {
 	initWasmCache()
@@ -44,7 +49,7 @@ func shouldCache(path string) bool {
 func newWasmCacheFs(underlying rootFs) (*wasmCacheFs, error) {
 	return &wasmCacheFs{
 		rootFs:   underlying,
-		memCache: make(map[string]js.Value),
+		memCache: make(map[string]js.Value, maxWasmModules),
 	}, nil
 }
 
@@ -69,7 +74,9 @@ func (w *wasmCacheFs) readFile(path string) (blob.Blob, error) {
 
 func (w *wasmCacheFs) WasmInstance(path string, importObject js.Value) (js.Value, error) {
 	log.Debug("Checking wasm instance cache")
+	w.mu.Lock()
 	module, memCacheHit := w.memCache[path]
+	w.mu.Unlock()
 	if memCacheHit {
 		log.Debug("memCache hit: ", path)
 	} else {
@@ -103,14 +110,32 @@ func (w *wasmCacheFs) WasmInstance(path string, importObject js.Value) (js.Value
 	}
 
 	if shouldCache(path) {
+		w.mu.Lock()
+		if len(w.memCache) >= maxWasmModules {
+			// Evict oldest entry
+			oldest := w.order[0]
+			delete(w.memCache, oldest)
+			w.order = w.order[1:]
+		}
 		w.memCache[path] = result.Get("module") // save compiled module for reuse
+		w.order = append(w.order, path)
+		w.mu.Unlock()
 	}
 	return result.Get("instance"), nil
 }
 
 func (w *wasmCacheFs) dropModuleCache(path string) error {
 	path = fsutil.NormalizePath(path)
+	w.mu.Lock()
 	delete(w.memCache, path)
+	// Remove from order slice
+	for i, p := range w.order {
+		if p == path {
+			w.order = append(w.order[:i], w.order[i+1:]...)
+			break
+		}
+	}
+	w.mu.Unlock()
 	return nil
 }
 
