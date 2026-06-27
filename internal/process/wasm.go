@@ -62,7 +62,6 @@ func (p *process) startWasmPromise(path string, exitChan chan<- int) (promise.Pr
 			goInstance.Set("_idPool", js.Null())
 			goInstance.Set("_pendingEvent", js.Null())
 			goInstance.Set("_exitPromise", js.Null())
-			goInstance.Set("_exitPromise", js.Null())
 		}()
 		if len(args) == 0 {
 			exitChan <- -1
