@@ -154,6 +154,7 @@ func (p *process) Done() {
 	log.Debug("PID ", p.pid, " is done.\n", p.fileDescriptors)
 	p.fileDescriptors.CloseAll()
 	p.ctxDone()
+	delete(pids, p.pid)
 }
 
 func (p *process) handleErr(err error) {

@@ -50,9 +50,19 @@ func (p *process) startWasmPromise(path string, exitChan chan<- int) (promise.Pr
 			if resumeFuncPtr != nil {
 				resumeFuncPtr.Release()
 			}
-			// TODO free the whole goInstance to fix garbage issues entirely. Freeing individual properties appears to work for now, but is ultimately a bad long-term solution because memory still accumulates.
+			// Free the whole goInstance to fix garbage issues entirely.
+			// Clear all properties that hold references to JS values.
 			goInstance.Set("mem", js.Null())
 			goInstance.Set("importObject", js.Null())
+			goInstance.Set("argv", js.Null())
+			goInstance.Set("env", js.Null())
+			goInstance.Set("_values", js.Null())
+			goInstance.Set("_ids", js.Null())
+			goInstance.Set("_goRefCounts", js.Null())
+			goInstance.Set("_idPool", js.Null())
+			goInstance.Set("_scheduledTimeouts", js.Null())
+			goInstance.Set("_pendingEvent", js.Null())
+			goInstance.Set("_exitPromise", js.Null())
 		}()
 		if len(args) == 0 {
 			exitChan <- -1
