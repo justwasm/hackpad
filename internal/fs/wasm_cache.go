@@ -5,7 +5,6 @@ package fs
 import (
 	"io"
 	"os"
-	"strings"
 	"sync"
 	"syscall/js"
 	"time"
@@ -43,7 +42,7 @@ func initWasmCache() {
 }
 
 func shouldCache(path string) bool {
-	return strings.HasPrefix(path, "usr/local/go/")
+	return true
 }
 
 func newWasmCacheFs(underlying rootFs) (*wasmCacheFs, error) {
