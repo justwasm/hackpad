@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	goBinaryPath      = "/usr/local/go/bin/go"
+	goBinaryPath      = "go"
 	buildConsoleIndex = 0
 )
 

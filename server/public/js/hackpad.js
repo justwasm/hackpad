@@ -19,11 +19,13 @@ async function init() {
     'GOMODCACHE': '/home/me/.cache/go-mod',
     'GOPROXY': 'https://goproxy.up.railway.app',
     'GONOSUMDB': '*',
-    'GOROOT': '/usr/local/go',
     'HOME': '/home/me',
-    'PATH': '/bin:/home/me/go/bin:/usr/local/go/bin/:/home/me/wanix',
+    'PATH': '/bin:/home/me/wanix:/home/me/go/bin',
     'USER': 'me',
     'WANIX': '/home/me/wanix',
+    'USER': 'me',
+    'GOGC': '70',
+    'GOMEMLIMIT': '384MiB',
   }
   go.run(cmd.instance)
   const { hackpad, fs } = window
@@ -35,19 +37,6 @@ async function init() {
   await hackpad.overlayOPFS('/home/me')
   await mkdir("/home/me/.cache", {recursive: true, mode: 0o700})
   await hackpad.overlayOPFS('/home/me/.cache')
-
-  await mkdir("/usr/local/go", {recursive: true, mode: 0o700})
-  await hackpad.overlayTarGzip('/usr/local/', 'wasm/go.tar.gz', {
-    persist: true,
-    skipCacheDirs: [
-      '/usr/local/go/bin',
-      '/usr/local/go/pkg/tool/js_wasm',
-    ],
-    progress: percentage => {
-      overlayProgress = percentage
-      progressListeners.forEach(c => c(percentage))
-    },
-  })
 
   console.debug("Startup took", (new Date().getTime() - startTime) / 1000, "seconds")
 }

@@ -22,7 +22,7 @@ import (
 var exampleFS embed.FS
 
 const (
-	goBinaryPath = "/usr/local/go/bin/go"
+	goBinaryPath = "go"
 )
 
 func writeExampleFile(fs embed.FS, src, dst string) error {

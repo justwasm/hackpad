@@ -24,10 +24,6 @@ var (
 	settingsCSS string
 )
 
-const (
-	goInstallPath = "/usr/local/go"
-)
-
 func init() {
 	css.Add(settingsCSS)
 }
@@ -124,7 +120,6 @@ func newSettingsDropdown(attachTo *dom.Element) *dropdown {
 	})
 	listenButton("reload programs", "Reinstall programs and reload?", func() {
 		_, _ = destroyMount("/bin").Await()
-		_, _ = destroyMount(goInstallPath).Await()
 		dom.Reload()
 	})
 	return drop
