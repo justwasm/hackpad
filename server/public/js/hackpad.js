@@ -41,9 +41,9 @@ async function init() {
 
 const initOnce = init();
 
-export async function install(name) {
+export async function install(url, name) {
   await initOnce
-  return window.hackpad.install(name)
+  return window.hackpad.install(url, name)
 }
 
 export async function run(name, ...args) {

@@ -16,7 +16,7 @@ import (
 	"github.com/hack-pad/hackpad/internal/promise"
 )
 
-func InstallFunc(this js.Value, args []js.Value) interface{} {
+func InstallFunc(this js.Value, args []js.Value) any {
 	resolve, reject, prom := promise.New()
 	go func() {
 		err := Install(args)
@@ -30,17 +30,22 @@ func InstallFunc(this js.Value, args []js.Value) interface{} {
 }
 
 func Install(args []js.Value) error {
-	if len(args) != 1 {
-		return errors.New("Expected command name to install")
+	if len(args) == 0 || len(args) > 2 {
+		return errors.New("Expected url to install, and optionally a binary name")
 	}
-	cmdpath := args[0].String()
-	command := strings.TrimSuffix(filepath.Base(cmdpath), ".wasm")
+	url := args[0].String()
+	var command string
+	if len(args) == 2 {
+		command = args[1].String()
+	} else {
+		command = strings.TrimSuffix(filepath.Base(url), ".wasm")
+	}
 
 	if err := os.MkdirAll("/bin", 0644); err != nil {
 		return err
 	}
 
-	body, err := httpGetFetch(cmdpath)
+	body, err := httpGetFetch(url)
 	if err != nil {
 		return err
 	}
