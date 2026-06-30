@@ -5,9 +5,10 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func ftruncateSync(args []js.Value) (interface{}, error) {
@@ -18,7 +19,7 @@ func ftruncateSync(args []js.Value) (interface{}, error) {
 func ftruncate(args []js.Value) ([]interface{}, error) {
 	// args: fd, len
 	if len(args) == 0 {
-		return nil, errors.Errorf("missing required args, expected fd: %+v", args)
+		return nil, fmt.Errorf("missing required args, expected fd: %+v", args)
 	}
 	fd := fs.FID(args[0].Int())
 	length := 0

@@ -10,7 +10,6 @@ import (
 
 	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/log"
-	"github.com/pkg/errors"
 )
 
 type Func = func(args []js.Value) (interface{}, error)
@@ -48,7 +47,7 @@ func setFuncHandler(name string, fn interface{}, args []js.Value) (returnedVal i
 
 		ret, err := fn(args)
 		if err != nil {
-			log.Error(errors.Wrap(err, name).Error())
+			log.Error(fmt.Errorf("%s: %w", name, err).Error())
 		}
 		return ret
 	case CallbackFunc:

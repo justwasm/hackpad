@@ -5,8 +5,9 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 // symlink(path, link, callback) — 'path' is the target, 'link' is the symlink location
@@ -17,7 +18,7 @@ func symlink(args []js.Value) ([]interface{}, error) {
 
 func symlinkSync(args []js.Value) (interface{}, error) {
 	if len(args) != 2 {
-		return nil, errors.Errorf("Invalid number of args, expected 2: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 2: %v", args)
 	}
 	target := args[0].String()
 	newname := args[1].String()

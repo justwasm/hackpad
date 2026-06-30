@@ -5,15 +5,17 @@ package process
 import (
 	"syscall/js"
 
+	"errors"
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/interop"
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func spawn(args []js.Value) (interface{}, error) {
 	if len(args) == 0 {
-		return nil, errors.Errorf("Invalid number of args, expected command name: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected command name: %v", args)
 	}
 
 	command := args[0].String()

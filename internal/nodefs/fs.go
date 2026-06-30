@@ -491,12 +491,12 @@ type nodefsFileInfo struct {
 	modTime time.Time
 }
 
-func (fi *nodefsFileInfo) Name() string      { return fi.name }
-func (fi *nodefsFileInfo) Size() int64        { return fi.size }
+func (fi *nodefsFileInfo) Name() string             { return fi.name }
+func (fi *nodefsFileInfo) Size() int64              { return fi.size }
 func (fi *nodefsFileInfo) Mode() hackpadfs.FileMode { return fi.mode }
-func (fi *nodefsFileInfo) ModTime() time.Time { return fi.modTime }
-func (fi *nodefsFileInfo) IsDir() bool        { return fi.isDir }
-func (fi *nodefsFileInfo) Sys() interface{}   { return nil }
+func (fi *nodefsFileInfo) ModTime() time.Time       { return fi.modTime }
+func (fi *nodefsFileInfo) IsDir() bool              { return fi.isDir }
+func (fi *nodefsFileInfo) Sys() interface{}         { return nil }
 
 // --- dir entry ---
 
@@ -506,8 +506,8 @@ type nodefsDirEntry struct {
 	isSymlink   bool
 }
 
-func (d *nodefsDirEntry) Name() string               { return d.name }
-func (d *nodefsDirEntry) IsDir() bool                 { return d.isDirectory }
+func (d *nodefsDirEntry) Name() string { return d.name }
+func (d *nodefsDirEntry) IsDir() bool  { return d.isDirectory }
 func (d *nodefsDirEntry) Type() hackpadfs.FileMode {
 	if d.isDirectory {
 		return hackpadfs.ModeDir
@@ -520,20 +520,20 @@ func (d *nodefsDirEntry) Info() (hackpadfs.FileInfo, error) {
 
 // Ensure interfaces are satisfied
 var (
-	_ hackpadfs.FS           = (*FS)(nil)
-	_ hackpadfs.OpenFileFS   = (*FS)(nil)
-	_ hackpadfs.StatFS       = (*FS)(nil)
-	_ hackpadfs.LstatFS      = (*FS)(nil)
-	_ hackpadfs.MkdirFS      = (*FS)(nil)
-	_ hackpadfs.MkdirAllFS   = (*FS)(nil)
-	_ hackpadfs.RemoveFS     = (*FS)(nil)
-	_ hackpadfs.RemoveAllFS  = (*FS)(nil)
-	_ hackpadfs.RenameFS     = (*FS)(nil)
-	_ hackpadfs.ChmodFS      = (*FS)(nil)
-	_ hackpadfs.ChtimesFS    = (*FS)(nil)
-	_ hackpadfs.ReadDirFS    = (*FS)(nil)
-	_ hackpadfs.SymlinkFS    = (*FS)(nil)
-	_ hackpadfs.ReadlinkFS   = (*FS)(nil)
-	_ hackpadfs.FileInfo     = (*nodefsFileInfo)(nil)
-	_ hackpadfs.DirEntry     = (*nodefsDirEntry)(nil)
+	_ hackpadfs.FS          = (*FS)(nil)
+	_ hackpadfs.OpenFileFS  = (*FS)(nil)
+	_ hackpadfs.StatFS      = (*FS)(nil)
+	_ hackpadfs.LstatFS     = (*FS)(nil)
+	_ hackpadfs.MkdirFS     = (*FS)(nil)
+	_ hackpadfs.MkdirAllFS  = (*FS)(nil)
+	_ hackpadfs.RemoveFS    = (*FS)(nil)
+	_ hackpadfs.RemoveAllFS = (*FS)(nil)
+	_ hackpadfs.RenameFS    = (*FS)(nil)
+	_ hackpadfs.ChmodFS     = (*FS)(nil)
+	_ hackpadfs.ChtimesFS   = (*FS)(nil)
+	_ hackpadfs.ReadDirFS   = (*FS)(nil)
+	_ hackpadfs.SymlinkFS   = (*FS)(nil)
+	_ hackpadfs.ReadlinkFS  = (*FS)(nil)
+	_ hackpadfs.FileInfo    = (*nodefsFileInfo)(nil)
+	_ hackpadfs.DirEntry    = (*nodefsDirEntry)(nil)
 )

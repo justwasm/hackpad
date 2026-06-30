@@ -5,11 +5,12 @@ package install
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/promise"
 	"github.com/hack-pad/hackpadfs/indexeddb/idbblob"
 	"github.com/hack-pad/hackpadfs/keyvalue/blob"
-	"github.com/pkg/errors"
 )
 
 var jsFetch = js.Global().Get("fetch")
@@ -27,7 +28,7 @@ func httpGetFetch(path string) (_ blob.Blob, err error) {
 
 	jsContentType := result.Get("headers").Call("get", "Content-Type")
 	if jsContentType.Type() != js.TypeString || jsContentType.String() != "application/wasm" {
-		return nil, errors.Errorf("Invalid content type for Wasm: %v", jsContentType)
+		return nil, fmt.Errorf("Invalid content type for Wasm: %v", jsContentType)
 	}
 	body, err := promise.From(result.Call("arrayBuffer")).Await()
 	if err != nil {

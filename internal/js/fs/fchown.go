@@ -5,9 +5,10 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func fchown(args []js.Value) ([]interface{}, error) {
@@ -17,7 +18,7 @@ func fchown(args []js.Value) ([]interface{}, error) {
 
 func fchownSync(args []js.Value) (interface{}, error) {
 	if len(args) != 3 {
-		return nil, errors.Errorf("Invalid number of args, expected 3: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 3: %v", args)
 	}
 	fid := common.FID(args[0].Int())
 	uid := args[1].Int()

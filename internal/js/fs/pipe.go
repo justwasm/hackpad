@@ -5,8 +5,9 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func pipe(args []js.Value) ([]interface{}, error) {
@@ -16,7 +17,7 @@ func pipe(args []js.Value) ([]interface{}, error) {
 
 func pipeSync(args []js.Value) (interface{}, error) {
 	if len(args) != 0 {
-		return nil, errors.Errorf("Invalid number of args, expected 0: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 0: %v", args)
 	}
 	p := process.Current()
 	fds := p.Files().Pipe()

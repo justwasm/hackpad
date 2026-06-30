@@ -5,10 +5,11 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/process"
 	"github.com/hack-pad/hackpadfs/indexeddb/idbblob"
-	"github.com/pkg/errors"
 )
 
 func read(args []js.Value) ([]interface{}, error) {
@@ -24,7 +25,7 @@ func readSync(args []js.Value) (interface{}, error) {
 func readSyncImpl(args []js.Value) (int, js.Value, error) {
 	// args: fd, buffer, offset, length, position
 	if len(args) != 5 {
-		return 0, js.Null(), errors.Errorf("missing required args, expected 5: %+v", args)
+		return 0, js.Null(), fmt.Errorf("missing required args, expected 5: %+v", args)
 	}
 	fd := fs.FID(args[0].Int())
 	buffer, err := idbblob.New(args[1])

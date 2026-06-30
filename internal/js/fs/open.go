@@ -6,8 +6,9 @@ import (
 	"os"
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func open(args []js.Value) ([]interface{}, error) {
@@ -17,7 +18,7 @@ func open(args []js.Value) ([]interface{}, error) {
 
 func openSync(args []js.Value) (interface{}, error) {
 	if len(args) == 0 {
-		return nil, errors.Errorf("Expected path, received: %v", args)
+		return nil, fmt.Errorf("Expected path, received: %v", args)
 	}
 	path := args[0].String()
 	flags := os.O_RDONLY

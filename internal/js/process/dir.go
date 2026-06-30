@@ -5,8 +5,9 @@ package process
 import (
 	"syscall/js"
 
+	"errors"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func cwd(args []js.Value) (interface{}, error) {

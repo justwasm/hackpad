@@ -11,10 +11,12 @@ import (
 	"syscall"
 	"time"
 
+	"errors"
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/interop"
 	"github.com/hack-pad/hackpadfs"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -60,7 +62,7 @@ func NewFileDescriptors(parentPID common.PID, workingDirectory string, parentFil
 		inheritFDs = []Attr{{FID: 0}, {FID: 1}, {FID: 2}}
 	}
 	if len(inheritFDs) < 3 {
-		return nil, nil, errors.Errorf("Invalid number of inherited file descriptors, must be 0 or at least 3: %#v", inheritFDs)
+		return nil, nil, fmt.Errorf("Invalid number of inherited file descriptors, must be 0 or at least 3: %#v", inheritFDs)
 	}
 	for _, attr := range inheritFDs {
 		var inheritFD FID
@@ -74,7 +76,7 @@ func NewFileDescriptors(parentPID common.PID, workingDirectory string, parentFil
 		}
 		parentFD := parentFiles.files[inheritFD]
 		if parentFD == nil {
-			return nil, nil, errors.Errorf("Invalid parent FID %d", attr.FID)
+			return nil, nil, fmt.Errorf("Invalid parent FID %d", attr.FID)
 		}
 		fid := f.newFID()
 		fd := parentFD.Dup(fid)

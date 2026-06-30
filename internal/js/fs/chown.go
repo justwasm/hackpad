@@ -5,7 +5,7 @@ package fs
 import (
 	"syscall/js"
 
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 func chown(args []js.Value) ([]interface{}, error) {
@@ -15,7 +15,7 @@ func chown(args []js.Value) ([]interface{}, error) {
 
 func chownSync(args []js.Value) (interface{}, error) {
 	if len(args) != 3 {
-		return nil, errors.Errorf("Invalid number of args, expected 3: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 3: %v", args)
 	}
 
 	path := args[0].String()

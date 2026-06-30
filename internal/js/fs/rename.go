@@ -5,8 +5,9 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func rename(args []js.Value) ([]interface{}, error) {
@@ -16,7 +17,7 @@ func rename(args []js.Value) ([]interface{}, error) {
 
 func renameSync(args []js.Value) (interface{}, error) {
 	if len(args) != 2 {
-		return nil, errors.Errorf("Invalid number of args, expected 2: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 2: %v", args)
 	}
 	oldPath := args[0].String()
 	newPath := args[1].String()

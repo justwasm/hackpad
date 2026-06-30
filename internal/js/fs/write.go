@@ -5,10 +5,11 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/process"
 	"github.com/hack-pad/hackpadfs/indexeddb/idbblob"
-	"github.com/pkg/errors"
 )
 
 func writeSync(args []js.Value) (interface{}, error) {
@@ -22,7 +23,7 @@ func writeSync(args []js.Value) (interface{}, error) {
 func write(args []js.Value) ([]interface{}, error) {
 	// args: fd, buffer, offset, length, position
 	if len(args) < 2 {
-		return nil, errors.Errorf("missing required args, expected fd and buffer: %+v", args)
+		return nil, fmt.Errorf("missing required args, expected fd and buffer: %+v", args)
 	}
 	fd := fs.FID(args[0].Int())
 	buffer, err := idbblob.New(args[1])

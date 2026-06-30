@@ -5,7 +5,7 @@ package common
 import (
 	"syscall/js"
 
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 func (f FID) JSValue() js.Value {
@@ -40,6 +40,6 @@ func handleRecovery(r interface{}) error {
 	case js.Value:
 		return js.Error{Value: val}
 	default:
-		return errors.Errorf("%+v", val)
+		return fmt.Errorf("%+v", val)
 	}
 }

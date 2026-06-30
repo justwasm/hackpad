@@ -1,7 +1,7 @@
 package promise
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 type Go struct {
@@ -60,6 +60,6 @@ func (p Go) Await() (interface{}, error) {
 	case error:
 		return value, err
 	default:
-		return value, errors.Errorf("%v", err)
+		return value, fmt.Errorf("%v", err)
 	}
 }

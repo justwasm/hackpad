@@ -5,10 +5,11 @@ import (
 	"io"
 	"os/exec"
 
+	"errors"
+
 	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/log"
 	"github.com/hack-pad/hackpadfs"
-	"github.com/pkg/errors"
 )
 
 var (

@@ -5,8 +5,6 @@ package interop
 import (
 	"fmt"
 	"syscall/js"
-
-	"github.com/pkg/errors"
 )
 
 func WrapAsJSError(err error, message string) js.Value {
@@ -18,7 +16,7 @@ func wrapAsJSError(err error, message string, args ...js.Value) js.Value {
 		return js.Null()
 	}
 
-	errMessage := errors.Wrap(err, message).Error()
+	errMessage := fmt.Errorf("%s: %w", message, err).Error()
 	for _, arg := range args {
 		errMessage += fmt.Sprintf("\n%v", arg)
 	}

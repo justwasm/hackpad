@@ -6,10 +6,11 @@ import (
 	"syscall"
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/common"
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func flock(args []js.Value) ([]interface{}, error) {
@@ -19,7 +20,7 @@ func flock(args []js.Value) ([]interface{}, error) {
 
 func flockSync(args []js.Value) (interface{}, error) {
 	if len(args) != 2 {
-		return nil, errors.Errorf("Invalid number of args, expected 2: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 2: %v", args)
 	}
 	fid := common.FID(args[0].Int())
 	flag := args[1].Int()

@@ -5,9 +5,10 @@ package fs
 import (
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func closeFn(args []js.Value) ([]interface{}, error) {
@@ -17,7 +18,7 @@ func closeFn(args []js.Value) ([]interface{}, error) {
 
 func closeSync(args []js.Value) (interface{}, error) {
 	if len(args) != 1 {
-		return nil, errors.Errorf("not enough args %d", len(args))
+		return nil, fmt.Errorf("not enough args %d", len(args))
 	}
 
 	fd := fs.FID(args[0].Int())

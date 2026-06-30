@@ -7,8 +7,9 @@ import (
 	"syscall"
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func stat(args []js.Value) ([]interface{}, error) {
@@ -18,7 +19,7 @@ func stat(args []js.Value) ([]interface{}, error) {
 
 func statSync(args []js.Value) (interface{}, error) {
 	if len(args) != 1 {
-		return nil, errors.Errorf("Invalid number of args, expected 1: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 1: %v", args)
 	}
 	path := args[0].String()
 	p := process.Current()

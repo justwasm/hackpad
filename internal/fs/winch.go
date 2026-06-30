@@ -129,11 +129,11 @@ func (r *winchReader) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-func (r *winchReader) Write(p []byte) (int, error)           { return 0, interop.ErrNotImplemented }
-func (r *winchReader) ReadAt(p []byte, off int64) (int, error) { return r.Read(p) }
-func (r *winchReader) Seek(offset int64, whence int) (int64, error)  { return 0, nil }
+func (r *winchReader) Write(p []byte) (int, error)                  { return 0, interop.ErrNotImplemented }
+func (r *winchReader) ReadAt(p []byte, off int64) (int, error)      { return r.Read(p) }
+func (r *winchReader) Seek(offset int64, whence int) (int64, error) { return 0, nil }
 func (r *winchReader) WriteAt(p []byte, off int64) (int, error)     { return 0, interop.ErrNotImplemented }
-func (r *winchReader) Truncate(size int64) error                      { return interop.ErrNotImplemented }
+func (r *winchReader) Truncate(size int64) error                    { return interop.ErrNotImplemented }
 
 func (r *winchReader) Close() error {
 	r.mu.Lock()
@@ -166,10 +166,10 @@ func (w *winchWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (w *winchWriter) Read(p []byte) (int, error)       { return 0, interop.ErrNotImplemented }
-func (w *winchWriter) ReadAt(p []byte, off int64) (int, error)  { return 0, interop.ErrNotImplemented }
+func (w *winchWriter) Read(p []byte) (int, error)                   { return 0, interop.ErrNotImplemented }
+func (w *winchWriter) ReadAt(p []byte, off int64) (int, error)      { return 0, interop.ErrNotImplemented }
 func (w *winchWriter) Seek(offset int64, whence int) (int64, error) { return 0, nil }
-func (w *winchWriter) WriteAt(p []byte, off int64) (int, error)   { return w.Write(p) }
+func (w *winchWriter) WriteAt(p []byte, off int64) (int, error)     { return w.Write(p) }
 func (w *winchWriter) Truncate(size int64) error                    { return interop.ErrNotImplemented }
 func (w *winchWriter) Close() error                                 { return nil }
 func (w *winchWriter) Stat() (os.FileInfo, error) {

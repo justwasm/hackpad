@@ -6,9 +6,10 @@ import (
 	"syscall"
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func wait(args []js.Value) ([]interface{}, error) {
@@ -18,7 +19,7 @@ func wait(args []js.Value) ([]interface{}, error) {
 
 func waitSync(args []js.Value) (interface{}, error) {
 	if len(args) != 1 {
-		return nil, errors.Errorf("Invalid number of args, expected 1: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 1: %v", args)
 	}
 	pid := process.PID(args[0].Int())
 	waitStatus := new(syscall.WaitStatus)
@@ -33,7 +34,7 @@ func Wait(pid process.PID, wstatus *syscall.WaitStatus, options int, rusage *sys
 	// TODO support options and rusage
 	p, ok := process.Get(pid)
 	if !ok {
-		return 0, errors.Errorf("Unknown child process: %d", pid)
+		return 0, fmt.Errorf("Unknown child process: %d", pid)
 	}
 
 	exitCode, err := p.Wait()

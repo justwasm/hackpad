@@ -6,8 +6,9 @@ import (
 	"os"
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func truncate(args []js.Value) ([]interface{}, error) {
@@ -17,7 +18,7 @@ func truncate(args []js.Value) ([]interface{}, error) {
 
 func truncateSync(args []js.Value) (interface{}, error) {
 	if len(args) < 1 {
-		return nil, errors.Errorf("Invalid number of args, expected at least 1: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected at least 1: %v", args)
 	}
 	path := args[0].String()
 	length := int64(0)

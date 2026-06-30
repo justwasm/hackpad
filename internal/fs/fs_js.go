@@ -3,8 +3,8 @@
 package fs
 
 import (
-	"github.com/hack-pad/hackpadfs/opfs"
 	"github.com/hack-pad/hackpadfs/keyvalue/blob"
+	"github.com/hack-pad/hackpadfs/opfs"
 )
 
 type persistFs struct {

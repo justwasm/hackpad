@@ -21,11 +21,11 @@ import (
 	"github.com/hack-pad/hackpad/internal/fs"
 	"github.com/hack-pad/hackpad/internal/interop"
 	"github.com/hack-pad/hackpad/internal/log"
+	"github.com/hack-pad/hackpad/internal/process"
+	"github.com/hack-pad/hackpad/internal/promise"
 	"github.com/hack-pad/hackpadfs/localdir"
 	"github.com/hack-pad/hackpadfs/mem"
 	"github.com/hack-pad/hackpadfs/opfs"
-	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/hack-pad/hackpad/internal/promise"
 	"github.com/johnstarich/go/datasize"
 )
 

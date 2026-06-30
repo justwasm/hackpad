@@ -6,8 +6,9 @@ import (
 	"os"
 	"syscall/js"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func chmod(args []js.Value) ([]interface{}, error) {
@@ -17,7 +18,7 @@ func chmod(args []js.Value) ([]interface{}, error) {
 
 func chmodSync(args []js.Value) (interface{}, error) {
 	if len(args) != 2 {
-		return nil, errors.Errorf("Invalid number of args, expected 2: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 2: %v", args)
 	}
 
 	path := args[0].String()

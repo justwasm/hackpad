@@ -6,8 +6,9 @@ import (
 	"syscall/js"
 	"time"
 
+	"fmt"
+
 	"github.com/hack-pad/hackpad/internal/process"
-	"github.com/pkg/errors"
 )
 
 func utimes(args []js.Value) ([]interface{}, error) {
@@ -17,7 +18,7 @@ func utimes(args []js.Value) ([]interface{}, error) {
 
 func utimesSync(args []js.Value) (interface{}, error) {
 	if len(args) != 3 {
-		return nil, errors.Errorf("Invalid number of args, expected 3: %v", args)
+		return nil, fmt.Errorf("Invalid number of args, expected 3: %v", args)
 	}
 
 	path := args[0].String()
