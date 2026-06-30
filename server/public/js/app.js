@@ -7,6 +7,7 @@ import { newEditor, setupMonaco } from './editor.js';
 import { newTerminal } from './terminal.js';
 import { Compat } from './compat.js';
 import { Loading } from './loading.js';
+import { CDN } from './w9y.js';
 
 function App() {
   const [percentage, setPercentage] = React.useState(0);
@@ -22,8 +23,8 @@ function App() {
           newEditor: (elem, onEdit) => newEditor(elem, onEdit, monaco),
         };
       }),
-      install('wasm/editor.wasm'),
-      install('wasm/sh.wasm'),
+      install(CDN.editor, 'editor'),
+      install(CDN.sh, 'sh'),
     ]).then(() => {
       run('editor', '--editor=editor')
       setLoading(false)

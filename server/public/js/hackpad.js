@@ -1,4 +1,5 @@
 import './webAssembly.js';
+import { CDN } from './w9y.js';
 
 const Go = window.Go;
 
@@ -8,7 +9,7 @@ let progressListeners = [];
 async function init() {
   const startTime = new Date().getTime()
   const go = new Go();
-  const cmd = await WebAssembly.instantiateStreaming(fetch(`wasm/main.wasm`), go.importObject)
+  const cmd = await WebAssembly.instantiateStreaming(fetch(CDN.main), go.importObject)
   go.env = {
     'TERM': 'xterm-256color',
     'COLORTERM': 'truecolor',
