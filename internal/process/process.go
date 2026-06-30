@@ -150,11 +150,16 @@ func (p *process) prepExecutable() (command string, err error) {
 	return command, nil
 }
 
+func (p *process) Wait() (exitCode int, err error) {
+	<-p.ctx.Done()
+	delete(pids, p.pid)
+	return p.exitCode, p.err
+}
+
 func (p *process) Done() {
 	log.Debug("PID ", p.pid, " is done.\n", p.fileDescriptors)
 	p.fileDescriptors.CloseAll()
 	p.ctxDone()
-	delete(pids, p.pid)
 }
 
 func (p *process) handleErr(err error) {
@@ -165,11 +170,6 @@ func (p *process) handleErr(err error) {
 		p.state = stateError
 	}
 	p.Done()
-}
-
-func (p *process) Wait() (exitCode int, err error) {
-	<-p.ctx.Done()
-	return p.exitCode, p.err
 }
 
 func (p *process) WorkingDirectory() string {
