@@ -87,6 +87,7 @@ server/public/wasm/main.wasm: server/public/wasm go
 	go build -o server/public/wasm/main.wasm .
 
 server/public/wasm/wasm_exec.js: go
+	mkdir -p server/public/wasm/
 	cp cache/go/lib/wasm/wasm_exec.js server/public/wasm/wasm_exec.js
 
 .PHONY: node-static
