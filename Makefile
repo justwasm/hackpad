@@ -47,19 +47,10 @@ tidy:
 	go mod tidy
 
 .PHONY: go-static
-go-static: tidy server/public/wasm/go.tar.gz commands
+go-static: tidy commands
 
 server/public/wasm:
 	mkdir -p server/public/wasm
-
-server/public/wasm/go.tar.gz: server/public/wasm
-	set -ex; \
-	[[ -f server/public/wasm/go.tar.gz ]] && exit 0; \
-	TMP=$$(mktemp -d); \
-	trap 'rm -rf "$$TMP"' EXIT; \
-	curl -sL "https://github.com/justwasm/go/releases/download/${TAG}/${TAG}.js-wasm.min.tar.gz" | tar -xzC "$$TMP"; \
-	mv "$$TMP/go" server/public/wasm/go; \
-	cd server/public/wasm && tar -czf go.tar.gz go && rm -rf go
 
 .PHONY: clean
 clean:
