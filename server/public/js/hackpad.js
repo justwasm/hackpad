@@ -24,8 +24,6 @@ async function init() {
     'USER': 'me',
     'WANIX': '/home/me/wanix',
     'USER': 'me',
-    'GOGC': '70',
-    'GOMEMLIMIT': '384MiB',
   }
   go.run(cmd.instance)
   const { hackpad, fs } = window
