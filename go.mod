@@ -10,7 +10,7 @@ replace charm.land/bubbletea/v2 => github.com/bubbletui/bubbletea/v2 v2.0.11
 
 require (
 	github.com/LumenResearch/uasurfer v0.0.0-20260126094926-dace53404a8d
-	github.com/btwiuse/hush v0.4.17
+	github.com/btwiuse/hush v0.5.3
 	github.com/hack-pad/go-indexeddb v0.3.2
 	github.com/hack-pad/hackpadfs v0.2.1
 	github.com/hack-pad/safejs v0.1.1
