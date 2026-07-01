@@ -9,7 +9,7 @@ let progressListeners = [];
 async function init() {
   const startTime = new Date().getTime()
   const go = new Go();
-  const cmd = await WebAssembly.instantiateStreaming(fetch(CDN.main), go.importObject)
+  const cmd = await WebAssembly.instantiateStreaming(fetch(CDN.kernel), go.importObject)
   go.env = {
     'TERM': 'xterm-256color',
     'COLORTERM': 'truecolor',
