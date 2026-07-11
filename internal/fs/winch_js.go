@@ -13,7 +13,9 @@ func init() {
 	winchOpener = jsWinchOpener
 	releaseWinchCB = func(r *winchReader) {
 		if r.cb != nil {
+			js.Global().Get("window").Call("removeEventListener", winchEventType(r.termID), r.cb)
 			r.cb.(js.Func).Release()
+			r.cb = nil
 		}
 	}
 }

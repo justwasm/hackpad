@@ -118,11 +118,12 @@ func (t *terminal) start(rawName, name string, args ...string) error {
 		}
 		return nil
 	})
+	dataListener := t.xterm.Call("onData", f)
 	go func() {
 		_ = t.cmd.Wait()
+		dataListener.Call("dispose")
 		f.Release()
 	}()
-	dataListener := t.xterm.Call("onData", f)
 	t.closables = append(t.closables, func() (err error) {
 		defer common.CatchException(&err)
 		dataListener.Call("dispose")
