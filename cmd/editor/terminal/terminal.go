@@ -109,13 +109,15 @@ func (t *terminal) start(rawName, name string, args ...string) error {
 
 	f := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		chunk := []byte(args[0].String())
-		_, err := stdin.Write(chunk)
-		if err == io.EOF {
-			err = t.Close()
-		}
-		if err != nil {
-			log.Error("Failed to write to terminal:", err)
-		}
+		go func() {
+			_, err := stdin.Write(chunk)
+			if err == io.EOF {
+				err = t.Close()
+			}
+			if err != nil {
+				log.Error("Failed to write to terminal:", err)
+			}
+		}()
 		return nil
 	})
 	dataListener := t.xterm.Call("onData", f)
