@@ -196,7 +196,7 @@ func wrapProgress(r io.ReadCloser, contentLength int64, setProgress func(float64
 	progressR := progress.NewReader(r)
 	ctx, wrapper := newReadCloseWrapper(progressR, r)
 	go func() {
-		progressChan := progress.NewTicker(context.Background(), progressR, contentLength, 100*time.Millisecond)
+		progressChan := progress.NewTicker(ctx, progressR, contentLength, 100*time.Millisecond)
 		for p := range progressChan {
 			select {
 			case <-ctx.Done():
