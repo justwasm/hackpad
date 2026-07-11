@@ -3,6 +3,7 @@
 package promise
 
 import (
+	"runtime"
 	"runtime/debug"
 	"syscall/js"
 
@@ -75,11 +76,15 @@ func (p JS) Await() (interface{}, error) {
 		close(errs)
 		return nil
 	})
-	select {
-	case err := <-errs:
-		return js.Null(), err
-	case result := <-results:
-		return result, nil
+	for {
+		select {
+		case err := <-errs:
+			return js.Null(), err
+		case result := <-results:
+			return result, nil
+		default:
+			runtime.Gosched()
+		}
 	}
 }
 
