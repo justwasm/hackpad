@@ -5,6 +5,7 @@ package promise
 import (
 	"runtime/debug"
 	"syscall/js"
+	"time"
 
 	"github.com/hack-pad/hackpad/internal/interop"
 	"github.com/hack-pad/hackpad/internal/log"
@@ -75,11 +76,15 @@ func (p JS) Await() (interface{}, error) {
 		close(errs)
 		return nil
 	})
-	select {
-	case err := <-errs:
-		return js.Null(), err
-	case result := <-results:
-		return result, nil
+	for {
+		select {
+		case err := <-errs:
+			return js.Null(), err
+		case result := <-results:
+			return result, nil
+		default:
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
 }
 
