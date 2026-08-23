@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 GO_VERSION = 1.27
 GOROOT =
-TAG = go1.27.0-go4js.1
+TAG = go1.27.0-go4js.2
 PATH := ${PWD}/cache/go/bin:${PWD}/cache/go/misc/wasm:${PATH}
 GOOS = js
 GOARCH = wasm
